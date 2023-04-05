@@ -1,0 +1,3 @@
+from .gaussian_process import BernoulliGaussianProcessTrainer, SoftmaxGaussianProcessTrainer
+from .neural_network import NeuralNetworkTrainer
+from .random_forest import RandomForestTrainer

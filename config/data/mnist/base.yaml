@@ -1,0 +1,12 @@
+# @package _global_
+
+acquisition:
+  n_train_labels_end: 300
+
+data:
+  batch_sizes:
+    test: 200
+  dataset:
+    _target_: src.datasets.ImageMNIST
+
+model_save_steps: [50, 100, 150, 200, 250]

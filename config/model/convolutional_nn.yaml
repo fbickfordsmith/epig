@@ -1,0 +1,5 @@
+# @package _global_
+
+model:
+  _target_: src.models.ConvolutionalNeuralNetwork
+  dropout_rate: 0.5

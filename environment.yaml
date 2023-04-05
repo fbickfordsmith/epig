@@ -1,0 +1,26 @@
+# Channels are checked in the order they are listed. This matters: we want cudatoolkit from nvidia.
+
+name: epig
+channels:
+  - nvidia
+  - pytorch
+  - conda-forge
+dependencies:
+  - black
+  - cudatoolkit
+  - gpytorch
+  - hydra-core
+  - jupyter
+  - matplotlib
+  - numpy
+  - pandas
+  - pip
+  - python=3.10
+  - pytorch
+  - pytorch-cuda=11.8
+  - scikit-learn
+  - torchvision
+  - tqdm
+  - pip:
+    - batchbald_redux
+    - --editable .  # Install src as a package

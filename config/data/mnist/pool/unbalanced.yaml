@@ -1,0 +1,12 @@
+# @package _global_
+
+# n_val ~= 0.2 * n_train_labels_end
+
+data:
+  label_counts:
+    pool:
+      "5_classes_in_range(5)": 400
+      "5_classes_in_range(5,10)": 4_000
+    val:
+      "5_classes_in_range(5)": 1
+      "5_classes_in_range(5,10)": 10

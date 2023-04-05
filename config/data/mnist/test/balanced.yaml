@@ -1,0 +1,6 @@
+# @package _global_
+
+data:
+  label_counts:
+    train:
+      "10_classes_in_range(10)": 2

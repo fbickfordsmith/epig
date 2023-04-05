@@ -1,0 +1,40 @@
+# @package _global_
+
+# Number per class:
+# - Before split: [12332  6688] [0.65 0.35]
+# - Non-test after split: [8608 4706] [0.65 0.35]
+# - Test after split: [3724 1982] [0.65 0.35]
+
+# From docs:
+# - Class 0 (gamma) is overrepresented in the data
+# - Class 1 (hadron) would consistute the majority in reality
+
+# Label counts:
+# - Assume 75% of the test set is class 1
+# - Set label_counts.target and label_counts.test based on this assumption
+# - Set label_counts.pool and label_counts.val to match the before-split class distribution
+# - Set label_counts.val to sum to 60, 20% of the training-label budget
+
+# References:
+#   https://archive.ics.uci.edu/ml/datasets/MAGIC+Gamma+Telescope
+
+defaults:
+  - uci/base
+
+data:
+  dataset:
+    _target_: src.datasets.Magic
+    test_label_counts:
+      0: 660  # 1980 / 3
+      1: 1_980  # round(1982)
+  label_counts:
+    pool:
+      0: 4_980  # 2700 * (12332 / 6688)
+      1: 2_700  # round(4706 - 1980 - 21)
+    target: ${data.dataset.test_label_counts}
+    train:
+      0: 2
+      1: 2
+    val:
+      0: 39  # 60 * (12332 / 6688) / (1 + (12332 / 6688))
+      1: 21  # 60 * 1 / (1 + (12332 / 6688))

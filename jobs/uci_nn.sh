@@ -1,0 +1,9 @@
+python main.py --multirun rng.seed=range(20) data=uci/magic model=fully_connected_nn trainer=neural_network_lr0.1 experiment_name=magic_nn acquisition.objective=random
+python main.py --multirun rng.seed=range(20) data=uci/magic model=fully_connected_nn trainer=neural_network_lr0.1 experiment_name=magic_nn acquisition.objective=bald
+python main.py --multirun rng.seed=range(20) data=uci/magic model=fully_connected_nn trainer=neural_network_lr0.1 experiment_name=magic_nn acquisition.objective=epig
+python main.py --multirun rng.seed=range(20) data=uci/satellite model=fully_connected_nn trainer=neural_network_lr0.1 experiment_name=satellite_nn acquisition.objective=random
+python main.py --multirun rng.seed=range(20) data=uci/satellite model=fully_connected_nn trainer=neural_network_lr0.1 experiment_name=satellite_nn acquisition.objective=bald
+python main.py --multirun rng.seed=range(20) data=uci/satellite model=fully_connected_nn trainer=neural_network_lr0.1 experiment_name=satellite_nn acquisition.objective=epig
+python main.py --multirun rng.seed=range(20) data=uci/vowels model=fully_connected_nn trainer=neural_network_lr0.1 experiment_name=vowels_nn acquisition.objective=random
+python main.py --multirun rng.seed=range(20) data=uci/vowels model=fully_connected_nn trainer=neural_network_lr0.1 experiment_name=vowels_nn acquisition.objective=bald
+python main.py --multirun rng.seed=range(20) data=uci/vowels model=fully_connected_nn trainer=neural_network_lr0.1 experiment_name=vowels_nn acquisition.objective=epig

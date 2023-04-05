@@ -1,0 +1,8 @@
+# @package _global_
+
+cuda: False
+
+model_type: rf
+
+trainer:
+  _target_: src.trainers.RandomForestTrainer

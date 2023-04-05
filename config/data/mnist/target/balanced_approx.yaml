@@ -1,0 +1,9 @@
+# @package _global_
+
+acquisition:
+  epig_probs_target: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+
+data:
+  label_counts:
+    target:
+      "10_classes_in_range(10)": 1_000  # Placeholder: these aren't used

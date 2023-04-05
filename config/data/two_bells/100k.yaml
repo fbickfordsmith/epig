@@ -1,0 +1,10 @@
+# @package _global_
+
+defaults:
+  - two_bells/base
+
+data:
+  label_counts:
+    pool:
+      0: 50_000
+      1: 50_000

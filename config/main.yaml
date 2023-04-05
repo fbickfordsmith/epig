@@ -1,0 +1,63 @@
+# From the Hydra docs (https://hydra.cc/docs/tutorials/basic/your_first_app/defaults/):
+# - If multiple configs define the same value, the last one wins.
+# - If the primary config contains both config values and a defaults list, include `_self_` to
+#   specify the composition order.
+
+# Specify trainer before data so that the data config can override the trainer config.
+defaults:
+  - _self_
+  - trainer: neural_network_lr0.01
+  - data: mnist/curated_pool
+  - model: convolutional_nn
+
+acquisition:
+  batch_size: 1  # This only affects BADGE and random acquisition
+  epig_probs_adjustment: null  # Optional adjustment to predictive distribution
+  epig_probs_target: null  # Target class distribution
+  epig_using_matmul: False  # Use efficient implementation using matrix multiplication
+  n_target_samples: 100  # Number of sampled target inputs
+  objective: random  # Acquisition function
+
+cuda: False
+
+data:
+  _target_: src.data.Data
+  dataset:
+    _partial_: True
+    data_dir: ${directories.data}
+  batch_sizes:
+    pool: ${data.batch_sizes.test}
+    target: ${acquisition.n_target_samples}
+    test: -1
+    train: -1
+    val: ${data.batch_sizes.test}
+
+directories:
+  base: .
+  data: ${directories.base}/data
+  results_base: ${directories.base}/results/raw
+  results_run: ${hydra:runtime.output_dir}
+
+experiment_name: dev
+
+hydra:
+  job:
+    config:
+      override_dirname:
+        exclude_keys:
+          - data
+          - experiment_name
+  job_logging:
+    handlers:
+      file:
+        filename: ${hydra:runtime.output_dir}/run.log
+  run:
+    dir: ${directories.results_base}/${experiment_name}/${now:%Y-%m-%d-%H-%M-%S}
+  sweep:
+    dir: ${hydra.run.dir}
+    subdir: ${hydra.job.override_dirname}
+
+rng:
+  _target_: src.utils.set_rngs
+  constrain_cudnn: False
+  seed: 0

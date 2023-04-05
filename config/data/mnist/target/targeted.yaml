@@ -1,0 +1,6 @@
+# @package _global_
+
+data:
+  label_counts:
+    target:
+      "2_classes_in_(1,7)": 1_000

@@ -1,0 +1,5 @@
+defaults:
+  - mnist/base
+  - mnist/pool/balanced
+  - mnist/target/targeted_approx
+  - mnist/test/targeted

@@ -1,0 +1,3 @@
+from .gaussian_process import VariationalGaussianProcess
+from .convolutional_nn import ConvolutionalNeuralNetwork
+from .fully_connected_nn import FullyConnectedNeuralNetwork

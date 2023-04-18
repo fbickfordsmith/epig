@@ -6,16 +6,15 @@ International Conference on Artificial Intelligence and Statistics (AISTATS), 20
 [![Python](https://img.shields.io/badge/Python-3670A0.svg?style=flat-square&logo=Python&logoColor=ffdd54)](https://www.python.org)
 [![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=flat-square&logo=PyTorch&logoColor=white)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/License-MIT-black.svg?style=flat-square)](LICENSE.md)
-[![arXiv](https://img.shields.io/badge/arXiv-1234.56789-b31b1b.svg?style=flat-square)](https://arxiv.org/abs/1234.56789)
+[![arXiv](https://img.shields.io/badge/arXiv-2304.08151-b31b1b.svg?style=flat-square)](https://arxiv.org/abs/2304.08151)
 
-(The arXiv link above is a placeholder and will be updated soon.)
 
 ## Abstract
 
-Information-theoretic approaches to active learning, such as BALD, typically focus on maximising the information gathered about the model parameters.
+Information-theoretic approaches to active learning have traditionally focused on maximising the information gathered about the model parameters, most commonly by optimising the BALD score.
 We highlight that this can be suboptimal from the perspective of predictive performance.
-In particular, BALD fails to account for the input distribution and thus is prone to prioritise data that is of low relevance to prediction.
-Addressing this shortfall, we propose the expected predictive information gain (EPIG), an acquisition function that measures information gain in the space of predictions rather than parameters.
+For example, BALD lacks a notion of an input distribution and so is prone to prioritise data of limited relevance.
+To address this we propose the expected predictive information gain (EPIG), an acquisition function that measures information gain in the space of predictions rather than parameters.
 We find that using EPIG leads to stronger predictive performance compared with BALD across a range of datasets and models, and thus provides an appealing drop-in replacement.
 
 

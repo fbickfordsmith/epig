@@ -58,7 +58,7 @@ class VariationalGaussianProcess(ApproximateGP):
 
         # Don't optimize if using_train_inputs. We can't beat the training inputs themselves (see
         # Section 2.2.1 of http://www.gatsby.ucl.ac.uk/~snelson/thesis.pdf).
-        learn_inducing_locations = not using_train_inputs
+        learn_inducing_locations &= not using_train_inputs
 
         variational_strategy = variational_strategy(
             model=self,

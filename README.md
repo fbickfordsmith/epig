@@ -1,3 +1,6 @@
+| Code for "Making better use of unlabelled data in Bayesian active learning" (AISTATS 2024) will be added by 1 May 2024 |
+| - |
+
 # Prediction-oriented Bayesian active learning
 
 Freddie Bickford Smith*, Andreas Kirsch*, Sebastian Farquhar, Yarin Gal, Adam Foster, Tom Rainforth \

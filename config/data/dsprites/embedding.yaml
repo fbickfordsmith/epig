@@ -1,0 +1,12 @@
+# @package _global_
+
+defaults:
+  - dsprites/image
+
+data:
+  batch_sizes:
+    pool: ${data.batch_sizes.test}
+    test: 2_000
+  dataset:
+    _target_: src.data.datasets.EmbeddingDSprites
+    embedding_type: btcvae

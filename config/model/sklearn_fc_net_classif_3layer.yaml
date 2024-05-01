@@ -1,0 +1,10 @@
+# @package _global_
+
+model:
+  _target_: sklearn.neural_network.MLPClassifier
+  hidden_layer_sizes: [128, 128, 128]
+  max_iter: 1_000
+
+model_type: sklearn
+
+use_gpu: False

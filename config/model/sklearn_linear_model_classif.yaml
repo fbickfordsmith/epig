@@ -1,0 +1,9 @@
+# @package _global_
+
+model:
+  _target_: sklearn.linear_model.LogisticRegression
+  max_iter: 10_000
+
+model_type: sklearn
+
+use_gpu: False

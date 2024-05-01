@@ -1,15 +1,19 @@
-# Channels are checked in the order they are listed. This matters: we want cudatoolkit from nvidia.
+# Channels are checked in the order they are listed.
 
 name: epig
+
 channels:
-  - nvidia
   - pytorch
   - conda-forge
+  - nvidia
+
 dependencies:
   - black
   - cudatoolkit
+  - faiss-gpu
   - gpytorch
   - hydra-core
+  - isort
   - jupyter
   - matplotlib
   - numpy
@@ -19,8 +23,12 @@ dependencies:
   - pytorch
   - pytorch-cuda=11.8
   - scikit-learn
+  - seaborn
   - torchvision
   - tqdm
+  - wandb
   - pip:
-    - batchbald_redux
     - --editable .  # Install src as a package
+    - batchbald_redux  # For "consistent" dropout layers
+    - robustness  # For ImageNet hierarchy
+    - git+https://github.com/AlexImmer/Laplace.git  # For Laplace approximation (releases on conda-forge and PyPI are outdated)

@@ -1,9 +1,0 @@
-python main.py --multirun rng.seed="range(20)" data=uci/magic model=random_forest trainer=random_forest experiment_name=magic_rf acquisition.objective=random
-python main.py --multirun rng.seed="range(20)" data=uci/magic model=random_forest trainer=random_forest experiment_name=magic_rf acquisition.objective=bald
-python main.py --multirun rng.seed="range(20)" data=uci/magic model=random_forest trainer=random_forest experiment_name=magic_rf acquisition.objective=epig
-python main.py --multirun rng.seed="range(20)" data=uci/satellite model=random_forest trainer=random_forest experiment_name=satellite_rf acquisition.objective=random
-python main.py --multirun rng.seed="range(20)" data=uci/satellite model=random_forest trainer=random_forest experiment_name=satellite_rf acquisition.objective=bald
-python main.py --multirun rng.seed="range(20)" data=uci/satellite model=random_forest trainer=random_forest experiment_name=satellite_rf acquisition.objective=epig
-python main.py --multirun rng.seed="range(20)" data=uci/vowels model=random_forest trainer=random_forest experiment_name=vowels_rf acquisition.objective=random
-python main.py --multirun rng.seed="range(20)" data=uci/vowels model=random_forest trainer=random_forest experiment_name=vowels_rf acquisition.objective=bald
-python main.py --multirun rng.seed="range(20)" data=uci/vowels model=random_forest trainer=random_forest experiment_name=vowels_rf acquisition.objective=epig

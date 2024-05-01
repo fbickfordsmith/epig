@@ -1,0 +1,7 @@
+# @package _global_
+
+data:
+  label_counts_main:
+    target:
+      1: 1_000
+      7: 1_000

@@ -1,0 +1,27 @@
+# @package _global_
+
+acquisition:
+  n_train_labels_end: 300
+
+data:
+  batch_sizes:
+    test: 50
+  dataset:
+    _target_: src.data.datasets.DSprites
+  label_counts_main:
+    pool:
+      0: 50_000
+      1: 50_000
+      2: 50_000
+    target:
+      0: 10_000
+      1: 10_000
+      2: 10_000
+    train:
+      0: 2
+      1: 2
+      2: 2
+    val:
+      0: 20
+      1: 20
+      2: 20

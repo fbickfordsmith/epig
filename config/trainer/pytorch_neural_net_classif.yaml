@@ -1,0 +1,7 @@
+# @package _global_
+
+defaults:
+  - pytorch_neural_net_classif_mcdo
+
+trainer:
+  _target_: src.trainers.PyTorchClassificationDeterministicTrainer

@@ -1,0 +1,5 @@
+defaults:
+  - cifar10/input/embedding
+  - cifar10/pool/balanced
+  - cifar10/target/redundant
+  - cifar10/test/redundant

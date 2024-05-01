@@ -1,0 +1,8 @@
+# @package _global_
+
+data:
+  label_counts_main:
+    target:
+      - classes: range(1_000)
+        n_classes: -1
+        n_per_class: 200

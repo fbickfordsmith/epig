@@ -1,0 +1,9 @@
+python  main.py  --multirun  rng.seed=range(20)  experiment_name=imagenet  data=imagenet/coarse  model=pytorch_fc_net_mcdo_3layer  acquisition.method=random
+python  main.py  --multirun  rng.seed=range(20)  experiment_name=imagenet  data=imagenet/coarse  model=pytorch_fc_net_mcdo_3layer  acquisition.method=bald
+python  main.py  --multirun  rng.seed=range(20)  experiment_name=imagenet  data=imagenet/coarse  model=pytorch_fc_net_mcdo_3layer  acquisition.method=epig
+python  main.py  --multirun  rng.seed=range(20)  experiment_name=imagenet  data=imagenet/coarse  model=pytorch_fc_net_mcdo_3layer  acquisition.method=marg_entropy
+python  main.py  --multirun  rng.seed=range(20)  experiment_name=imagenet  data=imagenet/coarse  model=pytorch_fc_net_mcdo_3layer  acquisition.method=badge             acquisition.batch_size=100
+python  main.py  --multirun  rng.seed=range(20)  experiment_name=imagenet  data=imagenet/coarse  model=pytorch_fc_net_mcdo_3layer  acquisition.method=greedy_k_centers  acquisition.batch_size=100
+python  main.py  --multirun  rng.seed=range(20)  experiment_name=imagenet  data=imagenet/coarse  model=pytorch_fc_net_mcdo_3layer  acquisition.method=k_means           acquisition.batch_size=100
+python  main.py  --multirun  rng.seed=range(20)  experiment_name=imagenet  data=imagenet/coarse  model=pytorch_fc_net_mcdo_3layer  acquisition.method=probcover         acquisition.batch_size=100
+python  main.py  --multirun  rng.seed=range(20)  experiment_name=imagenet  data=imagenet/coarse  model=pytorch_fc_net_mcdo_3layer  acquisition.method=typiclust         acquisition.batch_size=100

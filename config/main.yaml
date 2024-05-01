@@ -1,42 +1,74 @@
-# From the Hydra docs (https://hydra.cc/docs/tutorials/basic/your_first_app/defaults/):
+# From the Hydra docs (https://hydra.cc/docs/tutorials/basic/your_first_app/defaults):
 # - If multiple configs define the same value, the last one wins.
-# - If the primary config contains both config values and a defaults list, include `_self_` to
-#   specify the composition order.
+# - If the primary config contains both config values and a defaults
+#   list, include `_self_` to specify the composition order.
 
-# Specify trainer before data so that the data config can override the trainer config.
+# Specify trainer before data so that the data config can override the trainer config.
 defaults:
   - _self_
-  - trainer: neural_network_lr0.01
-  - data: mnist/curated_pool
-  - model: convolutional_nn
+  - trainer: pytorch_neural_net_classif_mcdo
+  - data: mnist/image_curated_pool
+  - model: pytorch_conv_net_batchbald2_mcdo
 
 acquisition:
-  batch_size: 1  # This only affects BADGE and random acquisition
-  epig_probs_adjustment: null  # Optional adjustment to predictive distribution
-  epig_probs_target: null  # Target class distribution
-  epig_using_matmul: False  # Use efficient implementation using matrix multiplication
-  n_target_samples: 100  # Number of sampled target inputs
-  objective: random  # Acquisition function
+  batch_size: 1  # How many labels to acquire at each active-learning step
+  badge_version: 2  # How to compute BADGE embeddings
+  badge_bait_memory_budget_gb: 16  # Memory budget (GB) for BADGE embeddings
+  epig:
+    classification:
+      target_class_dist: null  # Target class distribution
+      use_matmul: True  # Use an efficient implementation using matrix multiplication
+    n_target_samples: 100  # Number of sampled target inputs
+  method: random
+  probcover:
+    graph_constructor:
+      _target_: src.coresets.probcover.construct_graph
+      ball_radius: ${acquisition.probcover.tuned_ball_radius[${data.dataset._target_}][${data.dataset.embedding_type}]}
+      batch_size: ${data.batch_sizes.pool}
+    tuned_ball_radius:
+      src.data.datasets.EmbeddingCIFAR10:
+        mocov2plus: 0.62
+      src.data.datasets.EmbeddingDSprites:
+        btcvae: 0.06
+      src.data.datasets.EmbeddingImageNet:
+        vitb4_300ep: 0.22
+      src.data.datasets.EmbeddingMNIST:
+        simclr: 0.26
 
-cuda: False
+adjust_test_predictions: False
 
 data:
-  _target_: src.data.Data
+  _target_: src.data.active_learning.ActiveLearningData
   dataset:
     _partial_: True
     data_dir: ${directories.data}
   batch_sizes:
     pool: ${data.batch_sizes.test}
-    target: ${acquisition.n_target_samples}
+    target: ${acquisition.epig.n_target_samples}
     test: -1
     train: -1
     val: ${data.batch_sizes.test}
+  label_counts_test: -1
 
 directories:
   base: .
   data: ${directories.base}/data
-  results_base: ${directories.base}/results/raw
+  results_base: ${directories.base}/results/current
   results_run: ${hydra:runtime.output_dir}
+  results_subdirs:
+    gpytorch:
+      - ${hydra:runtime.output_dir}/data_indices
+      - ${hydra:runtime.output_dir}/git
+      - ${hydra:runtime.output_dir}/models
+      - ${hydra:runtime.output_dir}/training
+    pytorch:
+      - ${hydra:runtime.output_dir}/data_indices
+      - ${hydra:runtime.output_dir}/git
+      - ${hydra:runtime.output_dir}/models
+      - ${hydra:runtime.output_dir}/training
+    sklearn:
+      - ${hydra:runtime.output_dir}/data_indices
+      - ${hydra:runtime.output_dir}/git
 
 experiment_name: dev
 
@@ -45,8 +77,8 @@ hydra:
     config:
       override_dirname:
         exclude_keys:
-          - data
           - experiment_name
+          - wandb
   job_logging:
     handlers:
       file:
@@ -57,7 +89,15 @@ hydra:
     dir: ${hydra.run.dir}
     subdir: ${hydra.job.override_dirname}
 
+model_save_steps: []
+
 rng:
-  _target_: src.utils.set_rngs
-  constrain_cudnn: False
+  _target_: src.random.get_rng
   seed: 0
+
+use_gpu: True
+
+wandb:
+  init:
+    project: active-learning
+  use: False

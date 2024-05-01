@@ -1,0 +1,28 @@
+# @package _global_
+
+# CIFAR10: 0 = airplane, 1 = automobile, 2 = bird, 3 = cat, 4 = deer, 5 = dog, 6 = frog, 7 = horse, 8 = ship, 9 = truck
+
+data:
+  label_counts_main:
+    train:
+      - classes: (3, 5)
+        n_classes: -1
+        n_per_class: 2
+      - classes: (0, 1, 2, 4, 6, 7, 8, 9)
+        n_classes: 2
+        n_per_class: 1
+  label_counts_test:
+    - classes: (3, 5)
+      n_classes: -1
+      n_per_class: -1
+  class_map:
+    0: 2
+    1: 2
+    2: 2
+    3: 0
+    4: 2
+    5: 1
+    6: 2
+    7: 2
+    8: 2
+    9: 2

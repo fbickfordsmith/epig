@@ -1,0 +1,18 @@
+# @package _global_
+
+trainer:
+  _target_: src.trainers.PyTorchClassificationMCDropoutTrainer
+  early_stopping_metric: "val_nll"
+  early_stopping_patience: 5_000
+  epig_cfg: ${acquisition.epig.classification}
+  n_optim_steps_min: 0
+  n_optim_steps_max: 100_000
+  n_samples_test: 100
+  n_samples_train: 1
+  n_validations: 1_000
+  optimizer:
+    _target_: torch.optim.SGD
+    _partial_: True
+    lr: 0.01
+    weight_decay: 1e-4
+  restore_best_model: True

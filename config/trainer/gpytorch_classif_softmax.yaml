@@ -1,0 +1,8 @@
+# @package _global_
+
+defaults:
+  - gpytorch_classif_bernoulli
+
+trainer:
+  _target_: src.trainers.GPyTorchClassificationSoftmaxTrainer
+  n_samples_test: 1_000

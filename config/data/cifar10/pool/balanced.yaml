@@ -1,0 +1,12 @@
+# @package _global_
+
+data:
+  label_counts_main:
+    pool:
+      - classes: range(10)
+        n_classes: -1
+        n_per_class: 3_000
+    val:
+      - classes: range(10)
+        n_classes: -1
+        n_per_class: 6

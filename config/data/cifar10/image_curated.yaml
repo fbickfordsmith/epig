@@ -1,0 +1,5 @@
+defaults:
+  - cifar10/input/image
+  - cifar10/pool/balanced
+  - cifar10/target/balanced
+  - cifar10/test/balanced

@@ -1,7 +1,11 @@
 # @package _global_
 
 data:
-  label_counts:
+  label_counts_main:
     target:
-      "5_classes_in_range(5)": 100
-      "5_classes_in_range(5,10)": 1_000
+      - classes: range(5)
+        n_classes: -1
+        n_per_class: 100
+      - classes: range(5, 10)
+        n_classes: -1
+        n_per_class: 1_000

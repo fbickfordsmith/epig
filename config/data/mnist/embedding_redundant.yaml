@@ -1,0 +1,5 @@
+defaults:
+  - mnist/input/embedding
+  - mnist/pool/balanced
+  - mnist/target/redundant
+  - mnist/test/redundant

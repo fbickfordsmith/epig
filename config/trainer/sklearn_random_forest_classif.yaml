@@ -1,0 +1,8 @@
+# @package _global_
+
+acquisition:
+  epig_using_matmul: True
+
+trainer:
+  _target_: src.trainers.SKLearnRandomForestClassificationTrainer
+  epig_cfg: ${acquisition.epig.classification}

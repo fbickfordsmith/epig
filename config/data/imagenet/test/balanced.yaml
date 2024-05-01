@@ -1,0 +1,19 @@
+# @package _global_
+
+acquisition:
+  n_train_labels_end: 5_000
+
+data:
+  batch_sizes:
+    pool: 200
+    test: 1_000
+    train: 500
+  label_counts_main:
+    train:
+      - classes: range(1_000)
+        n_classes: -1
+        n_per_class: 2
+    val:
+      - classes: range(1_000)
+        n_classes: -1
+        n_per_class: 1

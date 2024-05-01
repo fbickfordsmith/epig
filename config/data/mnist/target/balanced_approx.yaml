@@ -1,9 +1,15 @@
 # @package _global_
 
+# labels_count_main.target is a placeholder: it isn't used when
+# acquisition.epig_classification.target_class_dist is defined.
+
 acquisition:
-  epig_probs_target: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+  epig_classification:
+    target_class_dist: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
 data:
-  label_counts:
+  label_counts_main:
     target:
-      "10_classes_in_range(10)": 1_000  # Placeholder: these aren't used
+      - classes: range(10)
+        n_classes: -1
+        n_per_class: 1_000

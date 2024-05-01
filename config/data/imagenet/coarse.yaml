@@ -1,0 +1,5 @@
+defaults:
+  - imagenet/input/embedding
+  - imagenet/pool/balanced
+  - imagenet/target/coarse
+  - imagenet/test/coarse

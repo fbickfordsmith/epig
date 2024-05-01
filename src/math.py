@@ -1,59 +1,52 @@
-"""
-Cl = number of classes
-N = number of examples
-"""
-
 import math
+from typing import Union
+
+import numpy as np
 import torch
 from torch import Tensor
-from torch.nn.functional import nll_loss
+from torch.nn.functional import relu
 
-
-def accuracy(predictions: Tensor, labels: Tensor) -> Tensor:
-    """
-    Arguments:
-        predictions: Tensor[float], [N, Cl]
-        labels: Tensor[int], [N,]
-
-    Returns:
-        Tensor[float], [1,]
-    """
-    return count_correct(predictions, labels) / len(predictions)  # [1,]
-
-
-def count_correct(predictions: Tensor, labels: Tensor) -> Tensor:
-    """
-    Arguments:
-        predictions: Tensor[float], [N, Cl]
-        labels: Tensor[int], [N,]
-
-    Returns:
-        Tensor[int], [1,]
-    """
-    return torch.sum(torch.argmax(predictions, dim=-1) == labels)  #  [1,]
+from src.typing import Array
 
 
 def logmeanexp(x: Tensor, dim: int, keepdim: bool = False) -> Tensor:
     """
-    Arguments:
-        x: Tensor[float]
-        dim: int
-        keepdim: bool
-
-    Returns:
-        Tensor[float]
+    Numerically stable implementation of log(mean(exp(x))).
     """
     return torch.logsumexp(x, dim=dim, keepdim=keepdim) - math.log(x.shape[dim])
 
 
-def nll_loss_from_probs(probs: Tensor, labels: Tensor) -> Tensor:
+def log1pexp(x: Tensor) -> Tensor:
     """
-    Arguments:
-        probs: Tensor[float], [N, Cl]
-        labels: Tensor[int], [N,]
+    Numerically stable implementation of log(1 + exp(x)) which is equivalent to softplus with
+    PyTorch's default scaling factor of 1.
 
-    Returns:
-        Tensor[float], [1,]
+    References:
+        https://arxiv.org/abs/2301.08297
+        https://pytorch.org/docs/stable/generated/torch.nn.functional.softplus.html
     """
-    probs = torch.clamp(probs, min=torch.finfo(probs.dtype).eps)  # [N, Cl]
-    return nll_loss(torch.log(probs), labels)  # [1,]
+    return torch.log1p(torch.exp(-torch.abs(x))) + relu(x)
+
+
+def logexpm1(x: Tensor) -> Tensor:
+    """
+    Numerically stable implementation of log(exp(x) - 1) which is the inverse of log1pexp(x).
+
+    References:
+        https://arxiv.org/abs/2301.08297
+        https://github.com/pytorch/pytorch/issues/72759#issuecomment-1236496693
+    """
+    return x + torch.log(-torch.expm1(-x))
+
+
+def gaussian_entropy(variance: Union[float, Array]) -> Union[float, Array]:
+    if isinstance(variance, float):
+        log = math.log
+    elif isinstance(variance, np.ndarray):
+        log = np.log
+    elif isinstance(variance, Tensor):
+        log = torch.log
+    else:
+        raise ValueError
+
+    return 0.5 * log(2 * math.pi * math.e * variance)

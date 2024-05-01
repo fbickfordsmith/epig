@@ -1,0 +1,6 @@
+# @package _global_
+
+model:
+  _target_: src.models.VariationalGaussianProcess
+
+model_type: gpytorch

@@ -1,0 +1,7 @@
+# @package _global_
+
+model:
+  _target_: src.models.FullyConnectedNet
+  hidden_sizes: [128, 128, 128]
+
+model_type: pytorch

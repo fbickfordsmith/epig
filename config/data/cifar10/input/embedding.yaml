@@ -1,0 +1,11 @@
+# @package _global_
+
+acquisition:
+  n_train_labels_end: 300
+
+data:
+  batch_sizes:
+    test: 200
+  dataset:
+    _target_: src.data.datasets.EmbeddingCIFAR10
+    embedding_type: mocov2plus

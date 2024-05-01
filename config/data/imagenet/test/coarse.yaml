@@ -1,0 +1,105 @@
+# @package _global_
+
+acquisition:
+  n_train_labels_end: 1_000
+
+data:
+  batch_sizes:
+    pool: 500
+    test: 1_000
+  class_map:
+    - old_class: ${superclasses.class_0}
+      new_class: 0
+    - old_class: ${superclasses.class_1}
+      new_class: 1
+    - old_class: ${superclasses.class_2}
+      new_class: 2
+    - old_class: ${superclasses.class_3}
+      new_class: 3
+    - old_class: ${superclasses.class_4}
+      new_class: 4
+    - old_class: ${superclasses.class_5}
+      new_class: 5
+    - old_class: ${superclasses.class_6}
+      new_class: 6
+    - old_class: ${superclasses.class_7}
+      new_class: 7
+    - old_class: ${superclasses.class_8}
+      new_class: 8
+    - old_class: ${superclasses.class_9}
+      new_class: 9
+    - old_class: ${superclasses.class_10}
+      new_class: 10
+  label_counts_main:
+    train:
+      - classes: ${superclasses.class_0}
+        n_classes: 2
+        n_per_class: 1
+      - classes: ${superclasses.class_1}
+        n_classes: 2
+        n_per_class: 1
+      - classes: ${superclasses.class_2}
+        n_classes: 2
+        n_per_class: 1
+      - classes: ${superclasses.class_3}
+        n_classes: 2
+        n_per_class: 1
+      - classes: ${superclasses.class_4}
+        n_classes: 2
+        n_per_class: 1
+      - classes: ${superclasses.class_5}
+        n_classes: 2
+        n_per_class: 1
+      - classes: ${superclasses.class_6}
+        n_classes: 2
+        n_per_class: 1
+      - classes: ${superclasses.class_7}
+        n_classes: 2
+        n_per_class: 1
+      - classes: ${superclasses.class_8}
+        n_classes: 2
+        n_per_class: 1
+      - classes: ${superclasses.class_9}
+        n_classes: 2
+        n_per_class: 1
+      - classes: ${superclasses.class_10}
+        n_classes: 2
+        n_per_class: 1
+    val:
+      - classes: range(1_000)
+        n_classes: 200
+        n_per_class: 1
+  label_counts_test:
+    - classes: ${superclasses.class_0}
+      n_classes: -1
+      n_per_class: -1
+    - classes: ${superclasses.class_1}
+      n_classes: -1
+      n_per_class: -1
+    - classes: ${superclasses.class_2}
+      n_classes: -1
+      n_per_class: -1
+    - classes: ${superclasses.class_3}
+      n_classes: -1
+      n_per_class: -1
+    - classes: ${superclasses.class_4}
+      n_classes: -1
+      n_per_class: -1
+    - classes: ${superclasses.class_5}
+      n_classes: -1
+      n_per_class: -1
+    - classes: ${superclasses.class_6}
+      n_classes: -1
+      n_per_class: -1
+    - classes: ${superclasses.class_7}
+      n_classes: -1
+      n_per_class: -1
+    - classes: ${superclasses.class_8}
+      n_classes: -1
+      n_per_class: -1
+    - classes: ${superclasses.class_9}
+      n_classes: -1
+      n_per_class: -1
+    - classes: ${superclasses.class_10}
+      n_classes: 187  # int(747 / 4)
+      n_per_class: 1

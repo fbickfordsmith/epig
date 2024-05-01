@@ -1,0 +1,8 @@
+# @package _global_
+
+model:
+  _target_: src.models.MCDropoutFullyConnectedNet
+  dropout_rate: 0.1
+  hidden_sizes: [128, 128, 128]
+
+model_type: pytorch

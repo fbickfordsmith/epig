@@ -1,0 +1,9 @@
+# @package _global_
+
+defaults:
+  - image
+
+data:
+  dataset:
+    _target_: src.data.datasets.EmbeddingMNIST
+    embedding_type: simclr

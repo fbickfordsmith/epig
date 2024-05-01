@@ -1,0 +1,5 @@
+defaults:
+  - mnist/input/image
+  - mnist/pool/balanced
+  - mnist/target/balanced
+  - mnist/test/balanced

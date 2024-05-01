@@ -1,10 +1,33 @@
 # @package _global_
 
-defaults:
-  - two_bells/base
+acquisition:
+  epig:
+    n_target_samples: 1_000
+  n_train_labels_end: 50
 
 data:
-  label_counts:
+  batch_sizes:
+    pool: 100
+    test: 1_000
+  dataset:
+    _target_: src.data.datasets.TwoBells
+    input_scale: 2
+    label_scale: 0.05
+    latent_scale: 1
+    n_test: 10_000
+    n_train: 110_000
+    shift: False
+    seed: ${rng.seed}
+  label_counts_main:
     pool:
       0: 50_000
       1: 50_000
+    target:
+      0: 1_000
+      1: 1_000
+    train:
+      0: 2
+      1: 2
+    val:
+      0: 5
+      1: 5

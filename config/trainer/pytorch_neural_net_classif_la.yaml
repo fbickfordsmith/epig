@@ -1,0 +1,38 @@
+# @package _global_
+
+# Whereas the standard posterior is p(θ|D) ∝ p(D|θ)p(θ), a cold or tempered posterior is sharpened
+# using temperature hyperparameters, T_lik <= 1 and T_prior <= 1:
+#       p_temp(θ|D) ∝ p(D|θ)^{1/T_lik} p(θ)^{1/T_prior}
+#   log p_temp(θ|D) = (1/T_lik) * log p(D|θ) + (1/T_prior) * log p(θ) - constant
+
+# The two most common configurations are
+#   1. T_lik < 1 and T_prior = 1 (tempered posterior according to Aitchison (2021))
+#   2. T_lik = T_prior = T < 1 (cold posterior according to Aitchison (2021))
+
+# Setting T_lik < 1 can be thought of as "overcounting" the data, and is equivalent to applying a
+# weighting of T_lik to the KL term in the ELBO (see Appendix E of Wenzel et al (2020)). It has
+# been proposed as a way to deal with model misspecification (see Grunwald & van Ommen (2017)).
+
+# References:
+#   Aitchison, 2021 - https://arxiv.org/abs/2008.05912
+#   Grunwald & van Ommen, 2017 - https://arxiv.org/abs/1412.3730
+#   Noci et al, 2021 - https://arxiv.org/abs/2106.06596
+#   Wenzel et al, 2020 - https://arxiv.org/abs/2002.02405
+
+defaults:
+  - pytorch_neural_net_classif_mcdo
+
+trainer:
+  _target_: src.trainers.PyTorchClassificationLaplaceTrainer
+  laplace_approx:
+    _target_: laplace.Laplace
+    _partial_: True
+    hessian_structure: diag
+    likelihood: classification
+    prior_precision: 1
+    subset_of_weights: all
+  likelihood_temperature: inverse_param_count
+  optimizer:
+    # lr: 1e-4  # 0.01 (default) is good for 1 hidden layer; lower is needed for 3 hidden layers (maybe turn off momentum too)
+    weight_decay: 0
+    momentum: 0.95

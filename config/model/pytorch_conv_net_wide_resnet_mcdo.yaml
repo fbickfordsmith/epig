@@ -1,0 +1,9 @@
+# @package _global_
+
+model:
+  _target_: src.models.MCDropoutWideResNet
+  dropout_rate: 0.3
+  depth: 16
+  width_multiplier: 8
+
+model_type: pytorch

@@ -1,0 +1,38 @@
+# @package _global_
+
+data:
+  label_counts_main:
+    target:
+      - classes: ${superclasses.class_0}
+        n_classes: -1
+        n_per_class: 200
+      - classes: ${superclasses.class_1}
+        n_classes: -1
+        n_per_class: 200
+      - classes: ${superclasses.class_2}
+        n_classes: -1
+        n_per_class: 200
+      - classes: ${superclasses.class_3}
+        n_classes: -1
+        n_per_class: 200
+      - classes: ${superclasses.class_4}
+        n_classes: -1
+        n_per_class: 200
+      - classes: ${superclasses.class_5}
+        n_classes: -1
+        n_per_class: 200
+      - classes: ${superclasses.class_6}
+        n_classes: -1
+        n_per_class: 200
+      - classes: ${superclasses.class_7}
+        n_classes: -1
+        n_per_class: 200
+      - classes: ${superclasses.class_8}
+        n_classes: -1
+        n_per_class: 200
+      - classes: ${superclasses.class_9}
+        n_classes: -1
+        n_per_class: 200
+      - classes: ${superclasses.class_10}
+        n_classes: -1
+        n_per_class: 1

@@ -1,5 +1,0 @@
-defaults:
-  - mnist/base
-  - mnist/pool/balanced
-  - mnist/target/targeted
-  - mnist/test/targeted

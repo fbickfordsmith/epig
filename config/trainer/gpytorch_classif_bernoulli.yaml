@@ -1,0 +1,26 @@
+# @package _global_
+
+init_length_scale_pdist: False
+
+trainer:
+  _target_: src.trainers.GPyTorchClassificationBernoulliTrainer
+  early_stopping_metric: "val_nll"
+  early_stopping_patience: -1
+  epig_cfg: ${acquisition.epig.classification}
+  init_length_scale: 1
+  init_output_scale: 10
+  learning_rates:
+    covariance_fn.base_kernel.raw_lengthscale: 0
+    covariance_fn.raw_outputscale: 0
+    mean_fn.raw_constant: 0
+  n_optim_steps_min: 0
+  n_optim_steps_max: 10_000
+  n_samples_test: 5_000
+  n_samples_train: 1_000
+  n_validations: 100
+  optimizer:
+    _target_: torch.optim.SGD
+    _partial_: True
+    lr: 0.005  # 0.01 gives NaN on TwoBells
+    momentum: 0.95
+  restore_best_model: False

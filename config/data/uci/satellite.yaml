@@ -5,36 +5,37 @@
 # - Non-test after split: [1072 479 961 415 470 1038] [0.24 0.11 0.22 0.09 0.11 0.23]
 # - Test after split: [461 224 397 211 237 470] [0.23 0.11 0.2 0.11 0.12 0.24]
 
-# Label counts:
-# - Set label_counts.test using the fixed test set
-# - Set labels_counts.target = 0.5 * label_counts.test
-# - Set label_counts.pool and label_counts.val to match the non-test class distribution
-# - Set label_counts.val to sum to 60, 20% of the training-label budget
+# Label counts:
+# - Set label_counts_test using the fixed test set
+# - Set label_counts_main.target = 0.5 * label_counts_test
+# - Set label_counts_main.pool and label_counts_main.val to match the non-test class distribution
+# - Set label_counts_main.val to sum to 60, 20% of the training-label budget
 
 # References:
 #   https://archive.ics.uci.edu/ml/datasets/Statlog+%28Landsat+Satellite%29
 
-defaults:
-  - uci/base
+acquisition:
+  n_train_labels_end: 300
 
 data:
   dataset:
-    _target_: src.datasets.Satellite
-    test_label_counts:
+    _target_: src.data.datasets.Satellite
+    label_counts_test:
       0: 461
       1: 224
       2: 397
       3: 211
       4: 237
       5: 470
-  label_counts:
+    seed: ${rng.seed}
+  label_counts_main:
     pool:
-      0: 536  # 0.5 * 1072
-      1: 240  # 0.5 * 479
-      2: 481  # 0.5 * 961
-      3: 208  # 0.5 * 415
-      4: 235  # 0.5 * 470
-      5: 519  # 0.5 * 1038
+      0: 536  # 0.5 * 1072
+      1: 240  # 0.5 * 479
+      2: 481  # 0.5 * 961
+      3: 208  # 0.5 * 415
+      4: 235  # 0.5 * 470
+      5: 519  # 0.5 * 1038
     target:
       0: 92  # 0.2 * 461
       1: 45  # 0.2 * 224
@@ -50,9 +51,10 @@ data:
       4: 2
       5: 2
     val:
-      0: 14  # 0.0135 * 1072
-      1: 6  # 0.0135 * 479
-      2: 13  # 0.0135 * 961
-      3: 6  # 0.0135 * 415
-      4: 6  # 0.0135 * 470
-      5: 14  # 0.0135 * 1038
+      0: 14  # 0.0135 * 1072
+      1: 6  # 0.0135 * 479
+      2: 13  # 0.0135 * 961
+      3: 6  # 0.0135 * 415
+      4: 6  # 0.0135 * 470
+      5: 14  # 0.0135 * 1038
+  label_counts_test: ${data.dataset.label_counts_test}

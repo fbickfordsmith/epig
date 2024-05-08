@@ -36,14 +36,14 @@ git clone https://github.com/fbickfordsmith/epig.git && cd epig
 
 If you're not using a CUDA device, remove the `cudatoolkit` and `pytorch-cuda` dependencies in `environment.yaml`.
 
-Create a Python environment using [Mamba](https://mamba.readthedocs.io) (or [Conda](https://conda.io), replacing `mamba` with `conda` below):
+Create an environment using [Mamba](https://mamba.readthedocs.io) (or [Conda](https://conda.io), replacing `mamba` with `conda` below) and activate it:
 
 ```bash
-mamba env create --file environment.yaml
+mamba env create --file environment.yaml && mamba activate epig
 ```
 
 
-## Running the code
+## Reproducing the results
 
 Run active learning with the default config:
 

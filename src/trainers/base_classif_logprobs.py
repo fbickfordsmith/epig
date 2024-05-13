@@ -47,6 +47,7 @@ class LogprobsClassificationDeterministicTrainer(DeterministicTrainer):
 
         if (n_classes is not None) and (n_classes < logprobs.shape[-1]):
             logprobs = logprobs[:, :n_classes]  # [N, n_classes]
+            logprobs -= torch.logsumexp(logprobs, dim=-1, keepdim=True)  # [N, n_classes]
 
         n_correct = count_correct_from_marginals(logprobs, labels)  # [1,]
         nll = nll_loss(logprobs, labels, reduction="sum")  # [1,]
@@ -78,6 +79,7 @@ class LogprobsClassificationStochasticTrainer(StochasticTrainer):
 
         if (n_classes is not None) and (n_classes < logprobs.shape[-1]):
             logprobs = logprobs[:, :n_classes]  # [N, n_classes]
+            logprobs -= torch.logsumexp(logprobs, dim=-1, keepdim=True)  # [N, n_classes]
 
         n_correct = count_correct_from_marginals(logprobs, labels)  # [1,]
         nll = nll_loss(logprobs, labels, reduction="sum")  # [1,]

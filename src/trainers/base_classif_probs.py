@@ -45,6 +45,7 @@ class ProbsClassificationDeterministicTrainer(DeterministicTrainer):
 
         if (n_classes is not None) and (n_classes < probs.shape[-1]):
             probs = probs[:, :n_classes]  # [N, n_classes]
+            probs /= torch.sum(probs, dim=-1, keepdim=True)  # [N, n_classes]
 
         n_correct = count_correct_from_marginals(probs, labels)  # [1,]
         nll = nll_loss_from_probs(probs, labels, reduction="sum")  # [1,]
@@ -78,6 +79,7 @@ class ProbsClassificationStochasticTrainer(StochasticTrainer):
 
         if (n_classes is not None) and (n_classes < probs.shape[-1]):
             probs = probs[:, :n_classes]  # [N, n_classes]
+            probs /= torch.sum(probs, dim=-1, keepdim=True)  # [N, n_classes]
 
         n_correct = count_correct_from_marginals(probs, labels)  # [1,]
         nll = nll_loss_from_probs(probs, labels, reduction="sum")  # [1,]

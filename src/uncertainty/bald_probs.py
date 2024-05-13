@@ -1,12 +1,7 @@
 """
-BALD(x) = 0 for a deterministic model but numerical instabilities can lead to nonzero scores.
-
 Cl = number of classes
 K = number of model samples
 N = number of examples
-
-References:
-    https://github.com/BlackHC/batchbald_redux/blob/master/01_batchbald.ipynb
 """
 
 import math
@@ -25,16 +20,16 @@ def entropy_from_probs(probs: Tensor) -> Tensor:
 
     If p(y_i|x) is 0, we make sure p(y_i|x) log p(y_i|x) evaluates to 0, not NaN.
 
+    References:
+        https://github.com/baal-org/baal/pull/270#discussion_r1271487205
+
     Arguments:
         probs: Tensor[float]
 
     Returns:
         Tensor[float]
     """
-    logprobs = torch.zeros_like(probs)
-    logprobs[probs > 0] = torch.log(probs[probs > 0])
-
-    return -torch.sum(probs * logprobs, dim=-1)
+    return -torch.sum(torch.xlogy(probs, probs), dim=-1)
 
 
 def marginal_entropy_from_probs(probs: Tensor) -> Tensor:
@@ -81,6 +76,11 @@ def bald_from_probs(probs: Tensor) -> Tensor:
     BALD(x) = E_{p(θ)}[H[p(y|x)] - H[p(y|x,θ)]]
             = H[p(y|x)] - E_{p(θ)}[H[p(y|x,θ)]]
             = H[E_{p(θ)}[p(y|x,θ)]] - E_{p(θ)}[H[p(y|x,θ)]]
+
+    BALD(x) = 0 for a deterministic model but numerical instabilities can lead to nonzero scores.
+
+    References:
+        https://github.com/BlackHC/batchbald_redux/blob/master/01_batchbald.ipynb
 
     Arguments:
         probs: Tensor[float], [N, K, Cl]

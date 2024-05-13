@@ -1,12 +1,7 @@
 """
-BALD(x) = 0 for a deterministic model but numerical instabilities can lead to nonzero scores.
-
 Cl = number of classes
 K = number of model samples
 N = number of examples
-
-References:
-    https://github.com/BlackHC/batchbald_redux/blob/master/01_batchbald.ipynb
 """
 
 import math
@@ -77,6 +72,11 @@ def bald_from_logprobs(logprobs: Tensor) -> Tensor:
     BALD(x) = E_{p(θ)}[H[p(y|x)] - H[p(y|x,θ)]]
             = H[p(y|x)] - E_{p(θ)}[H[p(y|x,θ)]]
             = H[E_{p(θ)}[p(y|x,θ)]] - E_{p(θ)}[H[p(y|x,θ)]]
+
+    BALD(x) = 0 for a deterministic model but numerical instabilities can lead to nonzero scores.
+
+    References:
+        https://github.com/BlackHC/batchbald_redux/blob/master/01_batchbald.ipynb
 
     Arguments:
         logprobs: Tensor[float], [N, K, Cl]

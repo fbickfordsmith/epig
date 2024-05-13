@@ -80,6 +80,7 @@ def epig_from_probs_using_matmul(probs_pool: Tensor, probs_targ: Tensor) -> Tens
 
     References:
         https://en.wikipedia.org/wiki/Mutual_information#Relation_to_conditional_and_joint_entropy
+        https://github.com/baal-org/baal/pull/270#discussion_r1271487205
 
     Arguments:
         probs_pool: Tensor[float], [N_p, K, Cl]
@@ -94,20 +95,15 @@ def epig_from_probs_using_matmul(probs_pool: Tensor, probs_targ: Tensor) -> Tens
 
     entropy_pool = marginal_entropy_from_probs(probs_pool)  # [N_p,]
     entropy_targ = marginal_entropy_from_probs(probs_targ)  # [N_t,]
-    entropy_targ = torch.mean(entropy_targ)  # [1,]
 
     probs_pool = probs_pool.permute(0, 2, 1)  # [N_p, Cl, K]
     probs_targ = probs_targ.permute(1, 0, 2)  # [K, N_t, Cl]
     probs_targ = probs_targ.reshape(K, N_t * Cl)  # [K, N_t * Cl]
     probs_joint = probs_pool @ probs_targ / K  # [N_p, Cl, N_t * Cl]
 
-    # We could just do probs_joint *= torch.nan_to_num(torch.log(probs_joint)) here. That has the
-    # advantage of working with a vmapped version of the function (the tensor sizes don't change).
-    # But overwriting NaNs to zero can cause numerical issues and is not differentiable.
-    probs_joint[probs_joint > 0] *= torch.log(probs_joint[probs_joint > 0])  # [N_p, Cl, N_t * Cl]
-    entropy_joint = -torch.sum(probs_joint, dim=(-2, -1)) / N_t  # [N_p,]
+    entropy_joint = -torch.sum(torch.xlogy(probs_joint, probs_joint), dim=(-2, -1)) / N_t  # [N_p,]
 
-    scores = entropy_pool + entropy_targ - entropy_joint  # [N_p,]
+    scores = entropy_pool + torch.mean(entropy_targ) - entropy_joint  # [N_p,]
     scores = check(scores, max_value=math.log(Cl**2), score_type="EPIG")  # [N_p,]
 
     return scores  # [N_p,]

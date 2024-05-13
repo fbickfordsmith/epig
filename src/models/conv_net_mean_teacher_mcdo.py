@@ -38,6 +38,7 @@ class MeanTeacherBlock(Module):
         x = self.conv(x)
         x = self.bn(x)
         x = self.activation_fn(x)
+
         return x
 
 
@@ -82,35 +83,35 @@ class MCDropoutMeanTeacherConvNet(BayesianModule):
         """
         maxpool1_width = compute_conv_output_width(
             image_width,
-            kernel_sizes=(3, 3, 3),
-            strides=(1, 1, 1),
+            kernel_sizes=[3, 3, 3],
+            strides=[1, 1, 1],
             padding=1,
         )
         conv2a_width = compute_conv_output_width(
             maxpool1_width,
-            kernel_sizes=(2,),
-            strides=(2,),
+            kernel_sizes=[2],
+            strides=[2],
         )
         maxpool2_width = compute_conv_output_width(
             conv2a_width,
-            kernel_sizes=(3, 3, 3),
-            strides=(1, 1, 1),
+            kernel_sizes=[3, 3, 3],
+            strides=[1, 1, 1],
             padding=1,
         )
         conv3a_width = compute_conv_output_width(
             maxpool2_width,
-            kernel_sizes=(2,),
-            strides=(2,),
+            kernel_sizes=[2],
+            strides=[2],
         )
         meanpool_width = compute_conv_output_width(
             conv3a_width,
-            kernel_sizes=(3, 1, 1),
-            strides=(1, 1, 1),
+            kernel_sizes=[3, 1, 1],
+            strides=[1, 1, 1],
         )
         fc_size = compute_conv_output_size(
             meanpool_width,
-            kernel_sizes=(6,),
-            strides=(2,),
+            kernel_sizes=[6],
+            strides=[2],
             n_output_channels=128,
         )
         return fc_size
@@ -145,4 +146,5 @@ class MCDropoutMeanTeacherConvNet(BayesianModule):
 
         x = x.flatten(start_dim=1)
         x = self.fc(x)
+
         return x

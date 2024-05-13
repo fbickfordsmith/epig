@@ -1,7 +1,7 @@
 # @package _global_
 
 model:
-  _target_: src.models.MCDropoutResNet18
+  _target_: src.models.MCDropoutResNet18V2
   dropout_rate: 0.5
 
 model_type: pytorch

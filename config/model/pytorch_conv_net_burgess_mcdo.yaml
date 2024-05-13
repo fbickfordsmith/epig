@@ -3,6 +3,5 @@
 model:
   _target_: src.models.MCDropoutBurgessConvNet
   dropout_rate: 0.05
-  vae_dir: ${directories.base}/repos/disentangling-vae
 
 model_type: pytorch

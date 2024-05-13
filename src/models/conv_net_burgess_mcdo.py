@@ -6,9 +6,7 @@ H = height
 W = width
 """
 
-import sys
-from pathlib import Path
-from typing import Sequence, Union
+from typing import Sequence
 
 import torch
 from batchbald_redux.consistent_mc_dropout import BayesianModule, ConsistentMCDropout2d
@@ -16,10 +14,11 @@ from torch import Tensor
 from torch.nn import Conv2d, Linear, ReLU
 
 from src.models.conv_net_batchbald_mcdo import MCDropoutFullyConnectedBlock
+from src.models.utils import compute_conv_output_size
 
 
 class MCDropoutBurgessConvBlock(BayesianModule):
-    def __init__(self, dropout_rate: float, n_in: int, n_out: int) -> None:
+    def __init__(self, n_in: int, n_out: int, dropout_rate: float) -> None:
         super().__init__()
 
         self.conv = Conv2d(in_channels=n_in, out_channels=n_out, kernel_size=4, stride=2, padding=1)
@@ -37,24 +36,41 @@ class MCDropoutBurgessConvBlock(BayesianModule):
         x = self.conv(x)
         x = self.dropout(x)
         x = self.activation_fn(x)
+
         return x
 
 
 class MCDropoutBurgessEncoder(BayesianModule):
+    """
+    References:
+        https://github.com/YannDubs/disentangling-vae/blob/master/disvae/models/encoders.py
+    """
+
     def __init__(self, input_shape: Sequence[int], output_size: int, dropout_rate: float) -> None:
         super().__init__()
 
-        n_input_channels, image_height, image_width = input_shape
+        n_input_channels, _, image_width = input_shape
+        n_conv = 4 if image_width >= 64 else 3
 
-        self.conv1 = MCDropoutBurgessConvBlock(dropout_rate, n_in=n_input_channels, n_out=32)
-        self.conv2 = MCDropoutBurgessConvBlock(dropout_rate, n_in=32, n_out=32)
-        self.conv3 = MCDropoutBurgessConvBlock(dropout_rate, n_in=32, n_out=32)
+        fc1_size = compute_conv_output_size(
+            image_width,
+            kernel_sizes=(n_conv * [4]),
+            strides=(n_conv * [2]),
+            n_output_channels=32,
+            padding=1,
+        )
 
-        if image_height == image_width == 64:
-            self.conv4 = MCDropoutBurgessConvBlock(dropout_rate, n_in=32, n_out=32)
+        l_kwargs = dict(dropout_rate=dropout_rate)
 
-        self.fc1 = MCDropoutFullyConnectedBlock(dropout_rate, n_in=(32 * 4 * 4), n_out=256)
-        self.fc2 = MCDropoutFullyConnectedBlock(dropout_rate, n_in=256, n_out=256)
+        self.conv1 = MCDropoutBurgessConvBlock(n_in=n_input_channels, n_out=32, **l_kwargs)
+        self.conv2 = MCDropoutBurgessConvBlock(n_in=32, n_out=32, **l_kwargs)
+        self.conv3 = MCDropoutBurgessConvBlock(n_in=32, n_out=32, **l_kwargs)
+
+        if n_conv == 4:
+            self.conv4 = MCDropoutBurgessConvBlock(n_in=32, n_out=32, **l_kwargs)
+
+        self.fc1 = MCDropoutFullyConnectedBlock(n_in=fc1_size, n_out=256, **l_kwargs)
+        self.fc2 = MCDropoutFullyConnectedBlock(n_in=256, n_out=256, **l_kwargs)
         self.fc3 = Linear(in_features=256, out_features=(2 * output_size))
 
     def forward(self, x: Tensor) -> Tensor:
@@ -62,10 +78,13 @@ class MCDropoutBurgessEncoder(BayesianModule):
         x = self.conv2(x)
         x = self.conv3(x)
         x = self.conv4(x) if hasattr(self, "conv4") else x
+
         x = x.flatten(start_dim=1)
+
         x = self.fc1(x)
         x = self.fc2(x)
         x = self.fc3(x)
+
         return torch.split(x, (x.shape[-1] // 2, x.shape[-1] // 2), dim=-1)
 
 
@@ -75,26 +94,17 @@ class MCDropoutBurgessConvNet(BayesianModule):
         input_shape: Sequence[int],
         output_size: int,
         dropout_rate: float,
-        vae_dir: Union[Path, str],
         use_deterministic_encoder: bool = True,
     ) -> None:
         super().__init__()
 
-        if use_deterministic_encoder:
-            sys.path += [str(vae_dir)]
+        l_kwargs = dict(dropout_rate=dropout_rate)
+        enc_kwargs = dict(dropout_rate=0) if use_deterministic_encoder else l_kwargs
 
-            from disvae.models.encoders import EncoderBurgess
-
-            self.encoder = EncoderBurgess(input_shape, latent_dim=128)
-
-        else:
-            self.encoder = MCDropoutBurgessEncoder(
-                input_shape, output_size=128, dropout_rate=dropout_rate
-            )
-
-        self.block1 = MCDropoutFullyConnectedBlock(dropout_rate, n_in=128, n_out=128)
-        self.block2 = MCDropoutFullyConnectedBlock(dropout_rate, n_in=128, n_out=128)
-        self.block3 = MCDropoutFullyConnectedBlock(dropout_rate, n_in=128, n_out=128)
+        self.encoder = MCDropoutBurgessEncoder(input_shape, output_size=128, **enc_kwargs)
+        self.block1 = MCDropoutFullyConnectedBlock(n_in=128, n_out=128, **l_kwargs)
+        self.block2 = MCDropoutFullyConnectedBlock(n_in=128, n_out=128, **l_kwargs)
+        self.block3 = MCDropoutFullyConnectedBlock(n_in=128, n_out=128, **l_kwargs)
         self.fc = Linear(in_features=128, out_features=output_size)
 
     def mc_forward_impl(self, x: Tensor) -> Tensor:
@@ -106,8 +116,10 @@ class MCDropoutBurgessConvNet(BayesianModule):
             Tensor[float], [N, O]
         """
         x, _ = self.encoder(x)
+
         x = self.block1(x)
         x = self.block2(x)
         x = self.block3(x)
         x = self.fc(x)
+
         return x

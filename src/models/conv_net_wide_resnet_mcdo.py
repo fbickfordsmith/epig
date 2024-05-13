@@ -5,9 +5,6 @@ O = number of outputs
 Ch = number of channels
 H = height
 W = width
-
-References:
-    https://github.com/y0ast/DUE/blob/main/due/wide_resnet.py
 """
 
 from typing import Callable, Sequence
@@ -66,10 +63,16 @@ class MCDropoutWideBasicBlock(BayesianModule):
         x = self.conv2(x)
 
         x += shortcut_x
+
         return x
 
 
 class MCDropoutWideResNet(BayesianModule):
+    """
+    References:
+        https://github.com/y0ast/DUE/blob/main/due/wide_resnet.py
+    """
+
     def __init__(
         self,
         input_shape: Sequence[int],
@@ -106,27 +109,26 @@ class MCDropoutWideResNet(BayesianModule):
                 kaiming_normal_(module.weight, mode="fan_out", nonlinearity="relu")
                 constant_(module.bias, 0)
 
-    @staticmethod
     def get_conv(
-        n_input_channels: int, n_output_channels: int, kernel_size: int, stride: int
+        self, n_input_channels: int, n_output_channels: int, kernel_size: int, stride: int
     ) -> Conv2d:
         padding = 1 if kernel_size == 3 else 0
         return Conv2d(n_input_channels, n_output_channels, kernel_size, stride, padding, bias=False)
 
-    @staticmethod
     def get_block(
+        self,
         n_input_channels: int,
         n_output_channels: int,
         n_blocks: int,
         stride: int,
         dropout_rate: float,
     ) -> Sequential:
-        strides = [stride] + [1] * (n_blocks - 1)
+        strides = [stride] + (n_blocks - 1) * [1]
         layers = []
 
         for stride in strides:
             layer = MCDropoutWideBasicBlock(
-                MCDropoutWideResNet.get_conv,
+                self.get_conv,
                 n_input_channels,
                 n_output_channels,
                 stride,
@@ -153,10 +155,12 @@ class MCDropoutWideResNet(BayesianModule):
 
         x = self.bn(x)
         x = self.activation_fn(x)
-        x = avg_pool2d(x, kernel_size=x.shape[-1])
 
+        x = avg_pool2d(x, kernel_size=x.shape[-1])
         x = x.flatten(start_dim=1)
+
         x = self.linear(x)
+
         return x
 
     def forward(self, input_B: Tensor, k: int) -> Tensor:

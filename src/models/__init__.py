@@ -5,7 +5,7 @@ from .conv_net_batchbald_mcdo import (
 )
 from .conv_net_burgess_mcdo import MCDropoutBurgessConvNet
 from .conv_net_mean_teacher_mcdo import MCDropoutMeanTeacherConvNet
-from .conv_net_resnet18_mcdo import MCDropoutResNet18
+from .conv_net_resnet18_mcdo import MCDropoutResNet18V1, MCDropoutResNet18V2
 from .conv_net_rholoss_mcdo import MCDropoutRHOLossConvNet
 from .conv_net_wide_resnet_mcdo import MCDropoutWideResNet
 from .fc_net import FullyConnectedNet

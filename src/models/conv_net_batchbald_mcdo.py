@@ -21,7 +21,7 @@ from src.models.utils import compute_conv_output_size
 
 
 class MCDropoutConvBlock(BayesianModule):
-    def __init__(self, dropout_rate: float, n_in: int, n_out: int, kernel_size: int) -> None:
+    def __init__(self, n_in: int, n_out: int, kernel_size: int, dropout_rate: float) -> None:
         super().__init__()
 
         self.conv = Conv2d(in_channels=n_in, out_channels=n_out, kernel_size=kernel_size)
@@ -41,11 +41,12 @@ class MCDropoutConvBlock(BayesianModule):
         x = self.dropout(x)
         x = self.maxpool(x)
         x = self.activation_fn(x)
+
         return x
 
 
 class MCDropoutFullyConnectedBlock(BayesianModule):
-    def __init__(self, dropout_rate: float, n_in: int, n_out: int) -> None:
+    def __init__(self, n_in: int, n_out: int, dropout_rate: float) -> None:
         super().__init__()
 
         self.fc = Linear(in_features=n_in, out_features=n_out)
@@ -63,6 +64,7 @@ class MCDropoutFullyConnectedBlock(BayesianModule):
         x = self.fc(x)
         x = self.dropout(x)
         x = self.activation_fn(x)
+
         return x
 
 
@@ -77,15 +79,15 @@ class MCDropoutBatchBALD2BlockConvNet(BayesianModule):
 
         n_input_channels, _, image_width = input_shape
 
-        fc1_size = compute_conv_output_size(
-            image_width, kernel_sizes=(2 * (5, 2)), strides=(2 * (1, 2)), n_output_channels=64
+        block3_size = compute_conv_output_size(
+            image_width, kernel_sizes=(2 * [5, 2]), strides=(2 * [1, 2]), n_output_channels=64
         )
 
-        self.block1 = MCDropoutConvBlock(
-            dropout_rate, n_in=n_input_channels, n_out=32, kernel_size=5
-        )
-        self.block2 = MCDropoutConvBlock(dropout_rate, n_in=32, n_out=64, kernel_size=5)
-        self.block3 = MCDropoutFullyConnectedBlock(dropout_rate, n_in=fc1_size, n_out=128)
+        l_kwargs = dict(dropout_rate=dropout_rate)
+
+        self.block1 = MCDropoutConvBlock(n_in=n_input_channels, n_out=32, kernel_size=5, **l_kwargs)
+        self.block2 = MCDropoutConvBlock(n_in=32, n_out=64, kernel_size=5, **l_kwargs)
+        self.block3 = MCDropoutFullyConnectedBlock(n_in=block3_size, n_out=128, **l_kwargs)
         self.fc = Linear(in_features=128, out_features=output_size)
 
     def mc_forward_impl(self, x: Tensor) -> Tensor:
@@ -98,9 +100,12 @@ class MCDropoutBatchBALD2BlockConvNet(BayesianModule):
         """
         x = self.block1(x)
         x = self.block2(x)
+
         x = x.flatten(start_dim=1)
+
         x = self.block3(x)
         x = self.fc(x)
+
         return x
 
 
@@ -115,16 +120,16 @@ class MCDropoutBatchBALD3BlockConvNet(BayesianModule):
 
         n_input_channels, _, image_width = input_shape
 
-        fc1_size = compute_conv_output_size(
-            image_width, kernel_sizes=(3 * (3, 2)), strides=(3 * (1, 2)), n_output_channels=128
+        block4_size = compute_conv_output_size(
+            image_width, kernel_sizes=(3 * [3, 2]), strides=(3 * [1, 2]), n_output_channels=128
         )
 
-        self.block1 = MCDropoutConvBlock(
-            dropout_rate, n_in=n_input_channels, n_out=32, kernel_size=3
-        )
-        self.block2 = MCDropoutConvBlock(dropout_rate, n_in=32, n_out=64, kernel_size=3)
-        self.block3 = MCDropoutConvBlock(dropout_rate, n_in=64, n_out=128, kernel_size=3)
-        self.block4 = MCDropoutFullyConnectedBlock(dropout_rate, n_in=fc1_size, n_out=512)
+        l_kwargs = dict(dropout_rate=dropout_rate)
+
+        self.block1 = MCDropoutConvBlock(n_in=n_input_channels, n_out=32, kernel_size=3, **l_kwargs)
+        self.block2 = MCDropoutConvBlock(n_in=32, n_out=64, kernel_size=3, **l_kwargs)
+        self.block3 = MCDropoutConvBlock(n_in=64, n_out=128, kernel_size=3, **l_kwargs)
+        self.block4 = MCDropoutFullyConnectedBlock(n_in=block4_size, n_out=512, **l_kwargs)
         self.fc = Linear(in_features=512, out_features=output_size)
 
     def mc_forward_impl(self, x: Tensor) -> Tensor:
@@ -138,7 +143,10 @@ class MCDropoutBatchBALD3BlockConvNet(BayesianModule):
         x = self.block1(x)
         x = self.block2(x)
         x = self.block3(x)
+
         x = x.flatten(start_dim=1)
+
         x = self.block4(x)
         x = self.fc(x)
+
         return x

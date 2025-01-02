@@ -1,19 +1,54 @@
-from typing import Tuple, Union
+import sys
+from typing import Dict, Tuple
 
 import numpy as np
+import torch
 from numpy.random import Generator
 from torch import Tensor
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
+
+from src.typing import Array
+
+
+def get_next_batch(dataloader: DataLoader) -> Tensor | Tuple:
+    try:
+        return next(dataloader)
+    except:
+        dataloader = iter(dataloader)
+        return next(dataloader)
+
+
+def is_float(x: Array) -> bool:
+    if isinstance(x, np.ndarray):
+        return x.dtype.kind == "f"
+    else:
+        return torch.is_floating_point(x)
+
+
+def replace_zero_with_one(x: Array | float) -> Array | float:
+    if isinstance(x, (float, np.floating)):
+        return 1.0 if x < sys.float_info.epsilon else x
+
+    elif isinstance(x, np.ndarray):
+        x[x < np.finfo(x.dtype).eps] = 1.0
+        return x
+
+    elif isinstance(x, Tensor):
+        x[x < torch.finfo(x.dtype).eps] = 1.0
+        return x
+
+    else:
+        raise TypeError(f"Unsupported type: {type(x)}")
 
 
 def split_indices_using_class_labels(
     labels: np.ndarray,
-    test_size: Union[dict, float, int],
+    test_size: Dict[int, float | int] | float | int,
     rng: Generator,
     balance_test_set: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    sklearn.model_selection.train_test_split() doesn't produce exact stratification.
+    Avoid sklearn.model_selection.train_test_split() because it doesn't give exact stratification.
     """
     if isinstance(test_size, float) and balance_test_set:
         class_counts = np.bincount(labels)
@@ -45,63 +80,3 @@ def split_indices_using_class_labels(
     test_inds = rng.permutation(test_inds)
 
     return train_inds, test_inds
-
-
-def compute_mean_and_std(
-    x: np.ndarray, axis: int = 0, keepdims: bool = True
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    To avoid dividing by zero we set the standard deviation to one if it is less than epsilon.
-    """
-    mean = np.mean(x, axis=axis, keepdims=keepdims)
-    std = np.std(x, axis=axis, keepdims=keepdims)
-
-    eps = np.finfo(x.dtype).eps
-
-    if isinstance(std, np.ndarray):
-        std[std < eps] = 1
-    elif std < eps:
-        std = 1
-
-    return mean, std
-
-
-def preprocess_inputs_for_unit_norm(
-    dataset: Dataset, axis: int = -1, keepdims: bool = True
-) -> Dataset:
-    dataset.data_norm = np.linalg.norm(dataset.data, axis=axis, keepdims=keepdims)
-    dataset.data /= dataset.data_norm
-
-    return dataset
-
-
-def preprocess_inputs_for_unit_variance(
-    dataset: Dataset, train_inputs: np.ndarray, axis: int = 0, keepdims: bool = True
-) -> Dataset:
-    mean, std = compute_mean_and_std(train_inputs, axis=axis, keepdims=keepdims)
-
-    dataset.data = (dataset.data - mean) / std
-    dataset.data_mean = mean
-    dataset.data_std = std
-
-    return dataset
-
-
-def preprocess_labels_for_unit_variance(
-    dataset: Dataset, train_labels: np.ndarray, axis: int = 0, keepdims: bool = True
-) -> Dataset:
-    mean, std = compute_mean_and_std(train_labels, axis=axis, keepdims=keepdims)
-
-    dataset.targets = (dataset.targets - mean) / std
-    dataset.targets_mean = mean
-    dataset.targets_std = std
-
-    return dataset
-
-
-def get_next(dataloader: DataLoader) -> Union[Tensor, Tuple]:
-    try:
-        return next(dataloader)
-    except:
-        dataloader = iter(dataloader)
-        return next(dataloader)

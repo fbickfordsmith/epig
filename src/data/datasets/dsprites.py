@@ -6,7 +6,7 @@ N_tr = number of training examples
 
 from pathlib import Path
 from subprocess import check_call
-from typing import Any, Tuple, Union
+from typing import Any, Tuple
 
 import numpy as np
 from numpy.lib.npyio import NpzFile
@@ -30,9 +30,9 @@ class DSprites(BaseDataset):
 
     def __init__(
         self,
-        data_dir: Union[Path, str],
+        data_dir: Path | str,
         train: bool = True,
-        input_preprocessing: str = "unit_variance",
+        input_preprocessing: str | None = "zero_mean_and_unit_variance",
         test_fraction: float = 0.15,
         target_latent: str = "shape",
         seed: int = 0,
@@ -57,8 +57,8 @@ class DSprites(BaseDataset):
             self.data = inputs[test_inds]
             self.targets = labels[test_inds]
 
-        if input_preprocessing == "unit_variance":
-            self.preprocess_inputs_for_unit_variance(inputs[train_inds])
+        if input_preprocessing == "zero_mean_and_unit_variance":
+            self.preprocess_inputs_for_zero_mean_and_unit_variance(inputs[train_inds])
 
     def download(self, data_dir: Path) -> None:
         url = f"https://github.com/google-deepmind/dsprites-dataset/raw/master/{self.filename}"
@@ -75,7 +75,7 @@ class DSprites(BaseDataset):
 
         return inputs, labels  # [N, 1, 64, 64], [N,]
 
-    def preprocess_inputs_for_unit_variance(self, train_inputs: np.ndarray) -> None:
+    def preprocess_inputs_for_zero_mean_and_unit_variance(self, train_inputs: np.ndarray) -> None:
         """
         If X is binary then X^2 = X and Var(X) = E[X^2] - E[X]^2 = E[X] - E[X]^2.
         """
@@ -85,6 +85,6 @@ class DSprites(BaseDataset):
 
 
 class EmbeddingDSprites(BaseEmbeddingDataset):
-    def __init__(self, data_dir: Union[Path, str], **kwargs: Any) -> None:
+    def __init__(self, data_dir: Path | str, **kwargs: Any) -> None:
         data_dir = Path(data_dir) / "dsprites"
         super().__init__(data_dir=data_dir, **kwargs)

@@ -21,12 +21,12 @@ from gpytorch.variational import (
 )
 from torch import Generator, Size, Tensor
 
-from src.random import sample_truncated_gaussian
+from src.random import sample_truncated_gaussian_like
 
 
 class GaussianProcess:
     def set_mean_fn(
-        self, name: str, batch_shape: Size, limit: float = 0.1, torch_rng: Generator = None
+        self, name: str, batch_shape: Size, limit: float = 0.1, torch_rng: Generator | None = None
     ) -> None:
         """
         The random-initialization procedure is based on the following.
@@ -37,7 +37,8 @@ class GaussianProcess:
         mean_fn = mean_fn(batch_shape=batch_shape)
 
         if (name == "constant") and (torch_rng is not None):
-            mean_fn.constant += sample_truncated_gaussian(mean_fn.constant, limit, torch_rng)
+            sample = sample_truncated_gaussian_like(mean_fn.constant, limit, torch_rng=torch_rng)
+            mean_fn.constant = mean_fn.constant + sample
 
         self.mean_fn = mean_fn
 
@@ -46,10 +47,10 @@ class GaussianProcess:
         covariance_fn: str,
         inputs: Tensor,
         batch_shape: Size,
-        ard: bool,
+        use_ard: bool,
         pdist_init: bool,
         limit: float = 0.1,
-        torch_rng: Generator = None,
+        torch_rng: Generator | None = None,
     ) -> None:
         """
         The pdist_init option is based on code by Joost van Amersfoort and John Bradshaw (see
@@ -70,7 +71,7 @@ class GaussianProcess:
             covariance_fn = LinearKernel()
 
         else:
-            if ard:
+            if use_ard:
                 assert inputs.ndim == 2
                 covariance_kwargs = dict(ard_num_dims=inputs.shape[-1])
             else:
@@ -93,12 +94,16 @@ class GaussianProcess:
             covariance_fn = ScaleKernel(covariance_fn, batch_shape=batch_shape)
 
             if torch_rng is not None:
-                covariance_fn.base_kernel.lengthscale += sample_truncated_gaussian(
-                    covariance_fn.base_kernel.lengthscale, limit, torch_rng
+                length_scale_sample = sample_truncated_gaussian_like(
+                    covariance_fn.base_kernel.lengthscale, limit, torch_rng=torch_rng
                 )
-                covariance_fn.outputscale += sample_truncated_gaussian(
-                    covariance_fn.outputscale, limit, torch_rng
+                output_scale_sample = sample_truncated_gaussian_like(
+                    covariance_fn.outputscale, limit, torch_rng=torch_rng
                 )
+                covariance_fn.base_kernel.lengthscale = (
+                    covariance_fn.base_kernel.lengthscale + length_scale_sample
+                )
+                covariance_fn.outputscale = covariance_fn.outputscale + output_scale_sample
 
         self.covariance_fn = covariance_fn
 
@@ -110,47 +115,55 @@ class GaussianProcess:
 
 
 class VariationalGaussianProcess(GaussianProcess, ApproximateGP):
+    """
+    References:
+    [1] https://github.com/cornellius-gp/gpytorch/blob/main/gpytorch/variational/unwhitened_variational_strategy.py
+    [2] http://www.gatsby.ucl.ac.uk/~snelson/thesis.pdf - Section 2.2.1
+    [3] https://docs.gpytorch.ai/en/v1.6.0/examples/04_Variational_and_Approximate_GPs/Natural_Gradient_Descent.html
+    """
+
     def __init__(
         self,
-        inputs: Tensor,
+        inducing_inputs: Tensor,
         output_size: int,
         mean_fn: str = "constant",
         covariance_fn: str = "rbf",
         variational_form: str = "full",
-        using_train_inputs: bool = True,
-        learn_inducing_locations: bool = False,
+        inducing_inputs_are_train_inputs: bool = True,
+        optimize_inducing_inputs: bool = False,
         pdist_init: bool = False,
-        ard: bool = False,
-        torch_rng: Generator = None,
+        use_ard: bool = False,
+        torch_rng: Generator | None = None,
     ) -> None:
         # Here "batch" corresponds to a "batch of GPs" so batch_shape = output_size.
         batch_shape = torch.Size([output_size]) if output_size > 1 else torch.Size([])
 
-        # Set the variational distribution q(u) over the latent-function values at the inputs.
+        # Set the variational distribution over the latent-function values at the inducing inputs.
         variational_distributions = {
             "full": CholeskyVariationalDistribution,  # Full-covariance Gaussian
             "diag": MeanFieldVariationalDistribution,  # Diagonal-covariance Gaussian
             "delta": DeltaVariationalDistribution,  # Delta (equivalent to MAP estimation)
         }
         variational_distribution = variational_distributions[variational_form](
-            num_inducing_points=len(inputs), batch_shape=batch_shape
+            num_inducing_points=len(inducing_inputs), batch_shape=batch_shape
         )
 
-        # Skip whitening the inputs in order to speed things up, unless using ARD.
-        if using_train_inputs and not ard:
+        # We can skip whitening the inducing inputs if they are the training inputs, unless we are
+        # using ARD. Skipping whitening speeds things up (see [1]).
+        if inducing_inputs_are_train_inputs and not use_ard:
             variational_strategy = UnwhitenedVariationalStrategy
         else:
             variational_strategy = VariationalStrategy
 
-        # Don't optimize if using_train_inputs. We can't beat the training inputs themselves (see
-        # Section 2.2.1 of http://www.gatsby.ucl.ac.uk/~snelson/thesis.pdf).
-        learn_inducing_locations &= not using_train_inputs
+        # Don't optimize the inducing inputs if they are the training inputs. We can't do better
+        # than the training inputs themselves (see [2]).
+        optimize_inducing_inputs &= not inducing_inputs_are_train_inputs
 
         variational_strategy = variational_strategy(
             model=self,
-            inducing_points=inputs,
+            inducing_points=inducing_inputs,
             variational_distribution=variational_distribution,
-            learn_inducing_locations=learn_inducing_locations,
+            learn_inducing_locations=optimize_inducing_inputs,
         )
 
         if output_size > 1:
@@ -158,12 +171,12 @@ class VariationalGaussianProcess(GaussianProcess, ApproximateGP):
                 base_variational_strategy=variational_strategy, num_tasks=output_size
             )
 
-        batch_shape = batch_shape if ard else torch.Size([])
+        batch_shape = batch_shape if use_ard else torch.Size([])
 
         super().__init__(variational_strategy=variational_strategy)
 
         self.set_mean_fn(mean_fn, batch_shape, torch_rng=torch_rng)
 
         self.set_covariance_fn(
-            covariance_fn, inputs, batch_shape, ard, pdist_init, torch_rng=torch_rng
+            covariance_fn, inducing_inputs, batch_shape, use_ard, pdist_init, torch_rng=torch_rng
         )

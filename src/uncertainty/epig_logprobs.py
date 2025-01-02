@@ -11,7 +11,6 @@ import torch
 from torch import Tensor
 
 from src.math import logmeanexp
-from src.uncertainty.epig_probs import epig_from_probs_using_matmul
 from src.uncertainty.utils import check
 
 
@@ -28,6 +27,10 @@ def conditional_epig_from_logprobs(logprobs_pool: Tensor, logprobs_targ: Tensor)
     Returns:
         Tensor[float], [N_p,]
     """
+    assert logprobs_pool.ndim == logprobs_targ.ndim == 3
+
+    _, _, Cl = logprobs_pool.shape
+
     # Estimate the log of the joint predictive distribution.
     logprobs_pool = logprobs_pool[:, None, :, :, None]  # [N_p, 1, K, Cl, 1]
     logprobs_targ = logprobs_targ[None, :, :, None, :]  # [1, N_t, K, 1, Cl]
@@ -45,6 +48,7 @@ def conditional_epig_from_logprobs(logprobs_pool: Tensor, logprobs_targ: Tensor)
     # This is the KL divergence between probs_joint and probs_joint_indep.
     log_term = logprobs_joint - logprobs_joint_indep  # [N_p, N_t, Cl, Cl]
     scores = torch.sum(torch.exp(logprobs_joint) * log_term, dim=(-2, -1))  # [N_p, N_t]
+    scores = check(scores, max_value=math.log(Cl**2), score_type="EPIG")  # [N_p, N_t]
 
     return scores  # [N_p, N_t]
 
@@ -58,13 +62,8 @@ def epig_from_logprobs(logprobs_pool: Tensor, logprobs_targ: Tensor) -> Tensor:
     Returns:
         Tensor[float], [N_p,]
     """
-    assert logprobs_pool.ndim == logprobs_targ.ndim == 3
-
-    _, _, Cl = logprobs_pool.shape
-
     scores = conditional_epig_from_logprobs(logprobs_pool, logprobs_targ)  # [N_p, N_t]
     scores = torch.mean(scores, dim=-1)  # [N_p,]
-    scores = check(scores, max_value=math.log(Cl**2), score_type="EPIG")  # [N_p,]
 
     return scores  # [N_p,]
 
@@ -103,13 +102,8 @@ def epig_from_logprobs_using_weights(
     Returns:
         Tensor[float], [N_p,]
     """
-    assert logprobs_pool.ndim == logprobs_targ.ndim == 3
-
-    _, _, Cl = logprobs_pool.shape
-
     scores = conditional_epig_from_logprobs(logprobs_pool, logprobs_targ)  # [N_p, N_t]
     scores = weights[None, :] * scores  # [N_p, N_t]
     scores = torch.mean(scores, dim=-1)  # [N_p,]
-    scores = check(scores, max_value=math.log(Cl**2), score_type="EPIG")  # [N_p,]
 
     return scores  # [N_p,]

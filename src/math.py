@@ -1,5 +1,4 @@
 import math
-from typing import Union
 
 import numpy as np
 import torch
@@ -39,7 +38,7 @@ def logexpm1(x: Tensor) -> Tensor:
     return x + torch.log(-torch.expm1(-x))
 
 
-def gaussian_entropy(variance: Union[float, Array]) -> Union[float, Array]:
+def gaussian_entropy(variance: Array | float) -> Array | float:
     if isinstance(variance, float):
         log = math.log
     elif isinstance(variance, np.ndarray):
@@ -47,6 +46,6 @@ def gaussian_entropy(variance: Union[float, Array]) -> Union[float, Array]:
     elif isinstance(variance, Tensor):
         log = torch.log
     else:
-        raise ValueError
+        raise TypeError(f"Unsupported type: {type(variance)}")
 
     return 0.5 * log(2 * math.pi * math.e * variance)

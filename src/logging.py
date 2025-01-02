@@ -2,7 +2,7 @@ from copy import deepcopy
 from datetime import timedelta
 from pathlib import Path
 from subprocess import check_output
-from typing import Callable, Sequence, Union
+from typing import Callable, Dict, Sequence
 
 import numpy as np
 import pandas as pd
@@ -39,7 +39,7 @@ class Dictionary(dict):
                 else:
                     dictionary[key] = torch.cat(dictionary[key])
             else:
-                raise TypeError
+                raise TypeError(f"Unsupported type: {type(dictionary[key][0])}")
 
         return dictionary
 
@@ -67,7 +67,9 @@ class Dictionary(dict):
 
         return dictionary
 
-    def save_to_csv(self, filepath: Path, formatting: Union[Callable, dict] = None) -> None:
+    def save_to_csv(
+        self, filepath: Path, formatting: Callable | Dict[str, Callable] | None = None
+    ) -> None:
         table = pd.DataFrame(self)
 
         if callable(formatting):
@@ -154,7 +156,7 @@ def save_dir_contents_to_wandb(glob_str: str, base_dir: Path, policy: str = "liv
 
 
 def save_run_to_wandb(
-    results_dir: Path, results_subdirs: Sequence[Union[Path, str]], policy: str = "live"
+    results_dir: Path, results_subdirs: Sequence[Path | str], policy: str = "live"
 ) -> None:
     for subdir in results_subdirs:
         save_dir_contents_to_wandb(glob_str=f"{subdir}/*", base_dir=results_dir, policy=policy)

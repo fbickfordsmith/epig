@@ -4,13 +4,12 @@ name: epig
 
 channels:
   - pytorch
-  - conda-forge
   - nvidia
+  - conda-forge
 
 dependencies:
   - black
-  - cudatoolkit
-  - faiss-gpu
+  - faiss-gpu=1.8
   - gpytorch
   - hydra-core
   - isort
@@ -21,7 +20,7 @@ dependencies:
   - pip
   - python=3.10
   - pytorch
-  - pytorch-cuda=11.8
+  - pytorch-cuda=12.1
   - scikit-learn
   - seaborn
   - torchvision

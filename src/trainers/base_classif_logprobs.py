@@ -42,7 +42,7 @@ class LogprobsClassificationDeterministicTrainer(DeterministicTrainer):
         "var_ratio": variation_ratio_from_logprobs,
     }
 
-    def evaluate_test(self, inputs: Tensor, labels: Tensor, n_classes: int = None) -> dict:
+    def evaluate_test(self, inputs: Tensor, labels: Tensor, n_classes: int | None = None) -> dict:
         logprobs = self.predict(inputs)  # [N, Cl]
 
         if (n_classes is not None) and (n_classes < logprobs.shape[-1]):
@@ -56,7 +56,9 @@ class LogprobsClassificationDeterministicTrainer(DeterministicTrainer):
 
     def estimate_uncertainty_batch(self, inputs: Tensor, method: str) -> Tensor:
         uncertainty_estimator = self.uncertainty_estimators[method]
+
         logprobs = self.predict(inputs)  # [N, Cl]
+
         return uncertainty_estimator(logprobs)  # [N,]
 
 
@@ -74,7 +76,7 @@ class LogprobsClassificationStochasticTrainer(StochasticTrainer):
         "var_ratio": variation_ratio_from_logprobs,
     }
 
-    def evaluate_test(self, inputs: Tensor, labels: Tensor, n_classes: int = None) -> dict:
+    def evaluate_test(self, inputs: Tensor, labels: Tensor, n_classes: int | None = None) -> dict:
         logprobs = self.marginal_predict(inputs, self.n_samples_test)  # [N, Cl]
 
         if (n_classes is not None) and (n_classes < logprobs.shape[-1]):
@@ -110,7 +112,9 @@ class LogprobsClassificationStochasticTrainer(StochasticTrainer):
 
         return scores  # [N_p,]
 
-    def estimate_epig_using_pool(self, loader: DataLoader, n_input_samples: int = None) -> Tensor:
+    def estimate_epig_using_target_class_dist(
+        self, loader: DataLoader, n_input_samples: int | None = None
+    ) -> Tensor:
         logprobs_cond = []
 
         for inputs, _ in loader:

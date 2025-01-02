@@ -11,15 +11,15 @@ from src.logging import Dictionary
 
 
 class Trainer:
-    def test(self, loader: DataLoader, n_classes: int = None) -> dict:
+    use_val_data: bool = True
+
+    def test(self, loader: DataLoader, n_classes: int | None = None) -> dict:
         """
         loss = 1/N ∑_{i=1}^N L(x_i,y_i)
 
         Here we use
             L_1(x_i,y_i) = bin_loss(x_i,y_i) = 1[argmax p(y|x_i) == y_i]
-            L_2(x_i,y_i) = mae_loss(x_i,y_i) = |E[p(y|x_i)] - y_i|
-            L_3(x_i,y_i) = mse_loss(x_i,y_i) = (E[p(y|x_i)] - y_i)^2
-            L_4(x_i,y_i) = nll_loss(x_i,y_i) = -log p(y_i|x_i).
+            L_2(x_i,y_i) = nll_loss(x_i,y_i) = -log p(y_i|x_i).
 
         For stochastic models we use
             p(y|x_i)  = E_{p(θ)}[p(y|x_i,θ)]
@@ -75,18 +75,20 @@ class StochasticTrainer(Trainer):
     """
 
     def estimate_uncertainty(
-        self, loader: DataLoader, method: str, seed: int, inputs_targ: Tensor = None
+        self, loader: DataLoader, method: str, seed: int, inputs_targ: Tensor | None = None
     ) -> Tensor:
         self.eval_mode()
 
-        estimate_epig_using_pool = (
+        use_epig_with_target_class_dist = (
             (method == "epig")
             and hasattr(self.epig_cfg, "target_class_dist")
             and self.epig_cfg.target_class_dist is not None
         )
 
-        if estimate_epig_using_pool:
-            scores = self.estimate_epig_using_pool(loader, n_input_samples=len(inputs_targ))  # [N,]
+        if use_epig_with_target_class_dist:
+            scores = self.estimate_epig_using_target_class_dist(
+                loader, n_input_samples=len(inputs_targ)
+            )  # [N,]
 
         else:
             scores = []

@@ -16,6 +16,7 @@ from src.math import logmeanexp
 from src.metrics import accuracy_from_conditionals
 from src.trainers.base_classif_logprobs import LogprobsClassificationStochasticTrainer
 from src.trainers.pytorch_classif import PyTorchClassificationTrainer
+from src.typing import ParamDict
 
 
 class PyTorchClassificationMCDropoutTrainer(
@@ -26,7 +27,7 @@ class PyTorchClassificationMCDropoutTrainer(
     """
 
     def eval_mode(self) -> None:
-        self.model.eval()
+        self.model = self.model.eval()
 
     def conditional_predict(
         self, inputs: Tensor, n_model_samples: int, independent: bool
@@ -95,7 +96,7 @@ class PyTorchClassificationMCDropoutTrainer(
         return nll_loss(logprobs, pseudolabels, reduction="none")  # [N,]
 
     def compute_badge_pseudoloss_v2(
-        self, _input: Tensor, grad_params: dict, no_grad_params: dict
+        self, _input: Tensor, grad_params: ParamDict, no_grad_params: ParamDict
     ) -> Tensor:
         """
         Arguments:

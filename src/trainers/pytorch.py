@@ -5,6 +5,7 @@ from time import time
 from typing import Tuple
 
 import torch
+from omegaconf import DictConfig
 from torch import Generator
 from torch.nn import Module
 from torch.optim import Optimizer
@@ -27,7 +28,7 @@ class PyTorchTrainer:
     early_stopping_metric: str
     early_stopping_patience: int
     restore_best_model: bool
-    epig_cfg: dict = None
+    epig_cfg: DictConfig | None = None
 
     def __post_init__(self) -> None:
         self.optimizer = self.optimizer(params=self.model.parameters())

@@ -19,14 +19,14 @@ from torch.utils.data import DataLoader
 from src.metrics import accuracy_from_marginals
 from src.trainers.base_classif_logprobs import LogprobsClassificationDeterministicTrainer
 from src.trainers.pytorch_classif import PyTorchClassificationTrainer
-from src.typing import IndexSequence
+from src.typing import IndexSequence, ParamDict
 
 
 class PyTorchClassificationDeterministicTrainer(
     PyTorchClassificationTrainer, LogprobsClassificationDeterministicTrainer
 ):
     def eval_mode(self) -> None:
-        self.model.eval()
+        self.model = self.model.eval()
 
     def predict(self, inputs: Tensor) -> Tensor:
         """
@@ -64,7 +64,7 @@ class PyTorchClassificationDeterministicTrainer(
         return nll_loss(logprobs, pseudolabels, reduction="none")  # [N,]
 
     def compute_badge_pseudoloss_v2(
-        self, _input: Tensor, grad_params: dict, no_grad_params: dict
+        self, _input: Tensor, grad_params: ParamDict, no_grad_params: ParamDict
     ) -> Tensor:
         """
         Arguments:
@@ -218,7 +218,7 @@ class PyTorchClassificationDeterministicTrainer(
         return embeddings  # [N, Cl, E]
 
     def compute_logprobs(
-        self, _input: Tensor, _class: int, grad_params: dict, no_grad_params: dict
+        self, _input: Tensor, _class: int, grad_params: ParamDict, no_grad_params: ParamDict
     ) -> Tensor:
         features = functional_call(
             self.model, (grad_params, no_grad_params), _input[None, :]

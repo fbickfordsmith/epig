@@ -7,6 +7,7 @@ from pathlib import Path
 from time import time
 from typing import List
 
+import gpytorch
 import hydra
 import numpy as np
 import torch
@@ -42,6 +43,9 @@ from src.trainers.gpytorch import GPyTorchTrainer
 from src.trainers.pytorch import PyTorchTrainer
 
 
+config_dir = Path(__file__).parent / "config"
+
+
 def get_gpytorch_trainer(
     data: ActiveLearningData, cfg: DictConfig, rng: Generator, device: str
 ) -> GPyTorchTrainer:
@@ -54,7 +58,7 @@ def get_gpytorch_trainer(
 
     train_inputs = data.main_dataset.data[data.main_inds["train"]]
 
-    model = instantiate(cfg.model, inputs=train_inputs, output_size=output_size)
+    model = instantiate(cfg.model, train_inputs, output_size)
     model = model.to(device)
 
     seed = rng.choice(int(1e6))
@@ -91,11 +95,13 @@ def get_pytorch_trainer(
 
 def get_sklearn_trainer(cfg: DictConfig) -> Trainer:
     model = instantiate(cfg.model)
+
     return instantiate(cfg.trainer, model=model)
 
 
 def acquire_using_random(data: ActiveLearningData, cfg: DictConfig, rng: Generator) -> List[int]:
     n_pool = len(data.main_inds["pool"])
+
     return rng.choice(n_pool, size=cfg.acquisition.batch_size, replace=False).tolist()
 
 
@@ -284,40 +290,34 @@ def acquire_using_badge_or_bait(
 def acquire_using_uncertainty(
     data: ActiveLearningData, cfg: DictConfig, rng: Generator, device: str, trainer: Trainer
 ) -> List[int]:
-    if "TwoBells" in cfg.data.dataset._target_:
-        if cfg.data.dataset.shift:
-            test_dist = data.test_dataset.input_dist
-        else:
-            test_dist = data.main_dataset.input_dist
+    seed = rng.choice(int(1e6))
+    acq_kwargs = dict(loader=data.get_loader("pool"), method=cfg.acquisition.method, seed=seed)
 
-        target_inputs = test_dist.rvs(cfg.acquisition.epig.n_target_samples, random_state=rng)
-        target_inputs = torch.tensor(target_inputs, dtype=torch.float32, device=device)
-    else:
-        target_loader = data.get_loader("target")
-        target_inputs, _ = next(iter(target_loader))
-
-    acq_kwargs = dict(
-        loader=data.get_loader("pool"), method=cfg.acquisition.method, seed=rng.choice(int(1e6))
+    use_epig_with_target_class_dist = (
+        cfg.acquisition.epig.classification.target_class_dist is not None
     )
 
-    if cfg.acquisition.method == "epig":
+    if (cfg.acquisition.method == "epig") and (not use_epig_with_target_class_dist):
+        if "TwoBells" in cfg.data.dataset._target_:
+            target_dist = data.main_dataset.input_dist
+            target_inputs = target_dist.rvs(cfg.acquisition.epig.n_target_samples, random_state=rng)
+            target_inputs = torch.tensor(target_inputs, dtype=torch.float32, device=device)
+        else:
+            target_loader = data.get_loader("target")
+            target_inputs, _ = next(iter(target_loader))
+
         acq_kwargs = dict(inputs_targ=target_inputs, **acq_kwargs)
 
-    with torch.inference_mode():
+    with torch.inference_mode(), gpytorch.settings.cholesky_max_tries(5):
         scores = trainer.estimate_uncertainty(**acq_kwargs)
 
-    if cfg.acquisition.batch_size == 1:
-        acquired_pool_inds = [torch.argmax(scores).item()]
-    else:
-        # Use stochastic batch acquisition (https://arxiv.org/abs/2106.12059).
-        scores = torch.log(scores) + Gumbel(loc=0, scale=1).sample(scores.shape)
-        acquired_pool_inds = torch.argsort(scores)[-cfg.acquisition.batch_size :]
-        acquired_pool_inds = acquired_pool_inds.tolist()
+    acquired_pool_inds = torch.argsort(scores, descending=True)[: cfg.acquisition.batch_size]
+    acquired_pool_inds = acquired_pool_inds.tolist()
 
     return acquired_pool_inds
 
 
-@hydra.main(version_base=None, config_path="config", config_name="main")
+@hydra.main(version_base=None, config_path=str(config_dir), config_name="main")
 def main(cfg: DictConfig) -> None:
     device = get_device(cfg.use_gpu)
     slurm_job_id = os.environ.get("SLURM_JOB_ID", default=None)  # None if not running in Slurm
@@ -381,15 +381,19 @@ def main(cfg: DictConfig) -> None:
             trainer = get_sklearn_trainer(cfg)
 
         else:
-            raise ValueError
+            raise ValueError(f"Unrecognized model type: {cfg.model_type}")
 
         if data.n_train_labels > 0:
             # --------------------------------------------------------------------------------------
             logging.info("Training")
 
-            train_step, train_log = trainer.train(
-                train_loader=data.get_loader("train"), val_loader=data.get_loader("val")
-            )
+            train_loader = data.get_loader("train")
+
+            if trainer.use_val_data:
+                val_loader = data.get_loader("val")
+                train_step, train_log = trainer.train(train_loader, val_loader)
+            else:
+                train_step, train_log = trainer.train(train_loader)
 
             if train_step is not None:
                 if train_step < cfg.trainer.n_optim_steps_max - 1:
@@ -408,8 +412,6 @@ def main(cfg: DictConfig) -> None:
         model_dir_exists = (results_dir / "models").exists()
 
         if (is_first_al_step or is_last_al_step or is_in_save_steps) and model_dir_exists:
-            logging.info("Saving model checkpoint")
-
             if isinstance(trainer.model, ParametricLaplace):
                 model_state = trainer.model.model.state_dict()
             else:
@@ -468,7 +470,7 @@ def main(cfg: DictConfig) -> None:
             acquired_pool_inds = acquire_using_uncertainty(data, cfg, rng, device, trainer)
 
         else:
-            raise ValueError
+            raise ValueError(f"Unrecognized acquisition method: {cfg.acquisition.method}")
 
         data.move_from_pool_to_train(acquired_pool_inds)
         is_first_al_step = False

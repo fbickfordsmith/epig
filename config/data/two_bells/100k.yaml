@@ -11,12 +11,8 @@ data:
     test: 1_000
   dataset:
     _target_: src.data.datasets.TwoBells
-    input_scale: 2
-    label_scale: 0.05
-    latent_scale: 1
     n_test: 10_000
     n_train: 110_000
-    shift: False
     seed: ${rng.seed}
   label_counts_main:
     pool:

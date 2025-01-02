@@ -8,6 +8,7 @@ from sklearn.cluster import KMeans as SKLearnKMeans
 from sklearn.cluster import MiniBatchKMeans, kmeans_plusplus
 from torch import Tensor
 
+from src.distance import torch_cdist
 from src.typing import Array
 
 
@@ -18,13 +19,12 @@ def acquire_using_k_means_plusplus(
     The inputs passed to this function are assumed to be the combined labelled and unlabelled
     inputs, where train_inds indicates which of them are labelled.
     """
+    seed = rng.choice(int(1e6))
     non_train_inds = np.setdiff1d(range(len(inputs)), train_inds)
 
-    inputs = inputs[non_train_inds]
+    inputs = inputs[non_train_inds].cpu().numpy()
 
-    _, selected_inds = kmeans_plusplus(
-        inputs.cpu().numpy(), n_clusters=n_acquire, random_state=rng.choice(int(1e6))
-    )
+    _, selected_inds = kmeans_plusplus(inputs, n_clusters=n_acquire, random_state=seed)
 
     return selected_inds
 
@@ -39,13 +39,12 @@ def acquire_using_k_means(
     References:
         https://github.com/JordanAsh/badge/blob/master/query_strategies/kmeans_sampling.py
     """
+    seed = rng.choice(int(1e6))
     non_train_inds = np.setdiff1d(range(len(inputs)), train_inds)
 
-    inputs = inputs[non_train_inds]
+    inputs = inputs[non_train_inds].cpu()
 
-    cluster_assignments, cluster_centers = k_means_cluster(
-        inputs.cpu(), n_clusters=n_acquire, seed=rng.choice(int(1e6))
-    )
+    cluster_assignments, cluster_centers = k_means_cluster(inputs, n_clusters=n_acquire, seed=seed)
     cluster_centers = torch.tensor(cluster_centers, dtype=inputs.dtype, device=inputs.device)
 
     selected_inds = []
@@ -53,7 +52,7 @@ def acquire_using_k_means(
     for i, cluster_center in enumerate(cluster_centers):
         cluster_inds = np.flatnonzero(cluster_assignments == i)
 
-        distances = torch.cdist(inputs[cluster_inds], cluster_center[None, :])
+        distances = torch_cdist(inputs[cluster_inds], cluster_center[None, :])
         ind_min_distance = torch.argmin(distances).item()
 
         selected_ind = cluster_inds[ind_min_distance]
@@ -67,8 +66,8 @@ def acquire_using_k_means(
 def k_means_cluster(
     inputs: Array,
     n_clusters: int,
-    seed: int,
-    batch_size: int = None,
+    seed: int | None,
+    batch_size: int | None = None,
     verbose: bool = False,
     use_faiss: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -78,13 +77,7 @@ def k_means_cluster(
     """
     if use_faiss:
         k_means = FaissKmeans(
-            d=inputs.shape[-1],
-            k=n_clusters,
-            gpu=1,
-            niter=100,
-            nredo=10,
-            verbose=verbose,
-            seed=seed,
+            d=inputs.shape[-1], k=n_clusters, gpu=1, niter=100, nredo=10, verbose=verbose, seed=seed
         )
         k_means.train(inputs)
 
@@ -92,13 +85,16 @@ def k_means_cluster(
         cluster_centers = k_means.centroids  # [k, F]
 
     else:
-        # When init="k-means++" (default), n_init="auto" -> n_init=1.
-        k_means_kwargs = dict(n_init="auto", verbose=verbose, random_state=seed)
+        if isinstance(inputs, Tensor):
+            # Letting Scikit-learn convert to NumPy internally can lead to different results.
+            inputs = inputs.cpu().numpy()
 
         if batch_size is None:
-            k_means = SKLearnKMeans(n_clusters, **k_means_kwargs)
+            k_means = SKLearnKMeans(n_clusters, verbose=verbose, random_state=seed)
         else:
-            k_means = MiniBatchKMeans(n_clusters, batch_size=batch_size, **k_means_kwargs)
+            k_means = MiniBatchKMeans(
+                n_clusters, batch_size=batch_size, verbose=verbose, random_state=seed
+            )
 
         cluster_assignments = k_means.fit_predict(inputs)  # [N,]
         cluster_centers = k_means.cluster_centers_  # [k, F]

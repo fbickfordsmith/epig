@@ -21,7 +21,7 @@ from sklearn.cluster import kmeans_plusplus
 from torch.distributions import Gumbel
 from torch.utils.data import DataLoader, TensorDataset
 
-from src.coresets import (
+from src.coverage import (
     acquire_using_greedy_k_centers,
     acquire_using_k_means,
     acquire_using_k_means_plusplus,

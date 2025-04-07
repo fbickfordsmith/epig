@@ -22,7 +22,7 @@ acquisition:
   method: random
   probcover:
     graph_constructor:
-      _target_: src.coresets.probcover.construct_graph
+      _target_: src.coverage.probcover.construct_graph
       ball_radius: ${acquisition.probcover.tuned_ball_radius[${data.dataset._target_}][${data.dataset.embedding_type}]}
       batch_size: ${data.batch_sizes.pool}
     tuned_ball_radius:

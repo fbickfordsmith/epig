@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 from numpy.random import Generator
 
-from src.coresets.k_means import k_means_cluster
+from src.coverage.k_means import k_means_cluster
 from src.distance import scipy_knn_dist, torch_knn_dist
 from src.typing import Array
 

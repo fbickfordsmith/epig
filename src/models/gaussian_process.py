@@ -16,6 +16,8 @@ from gpytorch.variational import (
     DeltaVariationalDistribution,
     IndependentMultitaskVariationalStrategy,
     MeanFieldVariationalDistribution,
+    NaturalVariationalDistribution,
+    TrilNaturalVariationalDistribution,
     UnwhitenedVariationalStrategy,
     VariationalStrategy,
 )
@@ -143,6 +145,8 @@ class VariationalGaussianProcess(GaussianProcess, ApproximateGP):
             "full": CholeskyVariationalDistribution,  # Full-covariance Gaussian
             "diag": MeanFieldVariationalDistribution,  # Diagonal-covariance Gaussian
             "delta": DeltaVariationalDistribution,  # Delta (equivalent to MAP estimation)
+            "natural_fast": NaturalVariationalDistribution,  # Natural gradient decent (fast)
+            "natural_tril": TrilNaturalVariationalDistribution,  # Natural gradient decent (stable)
         }
         variational_distribution = variational_distributions[variational_form](
             num_inducing_points=len(inducing_inputs), batch_shape=batch_shape

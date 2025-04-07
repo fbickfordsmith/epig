@@ -34,6 +34,7 @@ acquisition:
         vitb4_300ep: 0.22
       src.data.datasets.EmbeddingMNIST:
         simclr: 0.26
+  stochasticity: null  # Use stochastic acquisition (https://arxiv.org/abs/2106.12059)
 
 adjust_test_predictions: False
 

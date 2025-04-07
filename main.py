@@ -38,6 +38,7 @@ from src.logging import (
     save_run_to_wandb,
     set_up_wandb,
 )
+from src.random import sample_gumbel
 from src.trainers.base import DeterministicTrainer, Trainer
 from src.trainers.gpytorch import GPyTorchTrainer
 from src.trainers.pytorch import PyTorchTrainer
@@ -311,8 +312,27 @@ def acquire_using_uncertainty(
     with torch.inference_mode(), gpytorch.settings.cholesky_max_tries(5):
         scores = trainer.estimate_uncertainty(**acq_kwargs)
 
-    acquired_pool_inds = torch.argsort(scores, descending=True)[: cfg.acquisition.batch_size]
-    acquired_pool_inds = acquired_pool_inds.tolist()
+        scores = torch.nan_to_num(scores, nan=torch.min(scores))
+
+        if cfg.acquisition.stochasticity is not None:
+            # Use stochastic acquisition (https://arxiv.org/abs/2106.12059).
+            seed = rng.choice(int(1e6))
+            torch_rng = torch.Generator(device).manual_seed(seed)
+
+            gumbel_dist = Gumbel(loc=0, scale=1)
+            gumbel_samples = sample_gumbel(gumbel_dist, scores.shape, torch_rng)
+
+            if cfg.acquisition.stochasticity == "power":
+                scores = torch.log(scores) + gumbel_samples
+            elif cfg.acquisition.stochasticity == "softmax":
+                scores = scores + gumbel_samples
+            elif cfg.acquisition.stochasticity == "softrank":
+                scores = -torch.log(torch.argsort(scores, descending=True) + 1) + gumbel_samples
+            else:
+                raise ValueError(f"Unrecognized stochasticity: {cfg.acquisition.stochasticity}")
+
+        acquired_pool_inds = torch.argsort(scores, descending=True)[: cfg.acquisition.batch_size]
+        acquired_pool_inds = acquired_pool_inds.tolist()
 
     return acquired_pool_inds
 

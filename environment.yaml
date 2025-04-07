@@ -20,7 +20,7 @@ dependencies:
   - pip
   - python=3.10
   - pytorch
-  - pytorch-cuda=12.1
+  - pytorch-cuda=12.4
   - scikit-learn
   - seaborn
   - torchvision

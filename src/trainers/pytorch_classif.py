@@ -12,13 +12,14 @@ from torch import Tensor
 from torch.func import grad, vmap
 from torch.utils.data import DataLoader
 
-from src.data.utils import get_next
+from src.data.utils import get_next_batch
 from src.trainers.pytorch import PyTorchTrainer
+from src.typing import ParamDict
 
 
 class PyTorchClassificationTrainer(PyTorchTrainer):
     def train_step(self, loader: DataLoader) -> dict:
-        inputs, labels = get_next(loader)  # [N, ...], [N,]
+        inputs, labels = get_next_batch(loader)  # [N, ...], [N,]
 
         self.model.train()
 
@@ -30,7 +31,7 @@ class PyTorchClassificationTrainer(PyTorchTrainer):
 
         return {"acc": acc.item(), "nll": nll.item()}
 
-    def split_params(self, embedding_params: Sequence[str]) -> Tuple[dict, dict]:
+    def split_params(self, embedding_params: Sequence[str]) -> Tuple[ParamDict, ParamDict]:
         model = self.model.model if isinstance(self.model, ParametricLaplace) else self.model
 
         grad_params, no_grad_params = {}, {}
@@ -86,15 +87,15 @@ class PyTorchClassificationTrainer(PyTorchTrainer):
         embeddings = []
 
         for inputs, _ in loader:
-            gradient_dict = compute_grad(inputs, grad_params, no_grad_params)
+            gradient_dict = compute_grad(inputs, grad_params, no_grad_params)  # Dict[str, Tensor]
 
             gradients = []
 
-            for name, gradient in gradient_dict.items():
-                gradient = gradient.flatten(start_dim=1).cpu()
+            for _, gradient in gradient_dict.items():
+                gradient = gradient.flatten(start_dim=1).cpu()  # [B, E']
                 gradients += [gradient]
 
-            gradients = torch.cat(gradients, dim=-1)
+            gradients = torch.cat(gradients, dim=-1)  # [B, E]
             embeddings += [gradients]
 
         return torch.cat(embeddings)  # [N, E]

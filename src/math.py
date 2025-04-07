@@ -1,5 +1,5 @@
 import math
-from typing import Union
+from typing import Sequence
 
 import numpy as np
 import torch
@@ -9,11 +9,21 @@ from torch.nn.functional import relu
 from src.typing import Array
 
 
-def logmeanexp(x: Tensor, dim: int, keepdim: bool = False) -> Tensor:
+def logmeanexp(x: Tensor, dim: int | Sequence[int] | None = None, keepdim: bool = False) -> Tensor:
     """
     Numerically stable implementation of log(mean(exp(x))).
     """
-    return torch.logsumexp(x, dim=dim, keepdim=keepdim) - math.log(x.shape[dim])
+    if dim is None:
+        size = math.prod(x.shape)
+        return torch.logsumexp(x) - math.log(size)
+    elif isinstance(dim, int):
+        size = x.shape[dim]
+        return torch.logsumexp(x, dim=dim, keepdim=keepdim) - math.log(size)
+    elif isinstance(dim, (list, tuple)):
+        size = math.prod(x.shape[d] for d in dim)
+        return torch.logsumexp(x, dim=dim, keepdim=keepdim) - math.log(size)
+    else:
+        raise TypeError(f"Unsupported type: {type(dim)}")
 
 
 def log1pexp(x: Tensor) -> Tensor:
@@ -39,7 +49,7 @@ def logexpm1(x: Tensor) -> Tensor:
     return x + torch.log(-torch.expm1(-x))
 
 
-def gaussian_entropy(variance: Union[float, Array]) -> Union[float, Array]:
+def gaussian_entropy(variance: Array | float) -> Array | float:
     if isinstance(variance, float):
         log = math.log
     elif isinstance(variance, np.ndarray):
@@ -47,6 +57,6 @@ def gaussian_entropy(variance: Union[float, Array]) -> Union[float, Array]:
     elif isinstance(variance, Tensor):
         log = torch.log
     else:
-        raise ValueError
+        raise TypeError(f"Unsupported type: {type(variance)}")
 
     return 0.5 * log(2 * math.pi * math.e * variance)

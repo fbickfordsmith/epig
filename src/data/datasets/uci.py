@@ -5,24 +5,24 @@ N = number of examples
 
 import logging
 from pathlib import Path
-from typing import Sequence, Tuple, Union
+from typing import Dict, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
 
 from src.data.datasets.base import BaseDataset
-from src.data.utils import preprocess_inputs_for_unit_variance
+from src.data.input_preprocessing import preprocess_2d_inputs
 
 
 class BaseUCI(BaseDataset):
     def __init__(
         self,
-        data_dir: Union[Path, str],
+        data_dir: Path | str,
         train: bool = True,
-        label_counts_test: dict = None,
-        seed: int = None,
+        label_counts_test: Dict[int, int] | None = None,
+        seed: int | None = None,
         verbose: bool = False,
-        input_preprocessing: str = "unit_variance",
+        input_preprocessing: str | None = "zero_mean_and_unit_variance",
     ) -> None:
         data, n_test = self.download()
 
@@ -37,8 +37,9 @@ class BaseUCI(BaseDataset):
 
         self.data = self.data.astype(np.float32)  # [N, F]
 
-        if input_preprocessing == "unit_variance":
-            self = preprocess_inputs_for_unit_variance(self, train_inputs=self.data[:-n_test])
+        if input_preprocessing is not None:
+            train_inputs = self.data[:-n_test]
+            self = preprocess_2d_inputs(self, train_inputs, input_preprocessing)
 
         if verbose:
             self.log_class_frequencies(self.targets, n_test)

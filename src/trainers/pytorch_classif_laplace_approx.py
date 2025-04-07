@@ -5,7 +5,7 @@ K = number of model samples
 N = number of examples
 """
 
-from typing import Any, Sequence, Tuple, Union
+from typing import Any, Sequence, Tuple
 
 import torch
 from laplace import DiagLaplace, DiagSubnetLaplace, ParametricLaplace
@@ -25,6 +25,7 @@ from torch.utils.data import DataLoader
 from src.metrics import accuracy_from_marginals
 from src.trainers.base_classif_probs import ProbsClassificationStochasticTrainer
 from src.trainers.pytorch_classif import PyTorchClassificationTrainer
+from src.typing import ParamDict
 
 
 class PyTorchClassificationLaplaceTrainer(
@@ -33,10 +34,10 @@ class PyTorchClassificationLaplaceTrainer(
     def __init__(
         self,
         laplace_approx: ParametricLaplace,
-        likelihood_temperature: Union[float, int, str] = 1,
-        subnet_mask: SubnetMask = None,
-        subnet_mask_inds: Sequence[int] = None,
-        subnet_mask_names: Sequence[str] = None,
+        likelihood_temperature: float | int | str = 1,
+        subnet_mask: SubnetMask | None = None,
+        subnet_mask_inds: Sequence[int] | None = None,
+        subnet_mask_names: Sequence[str] | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -48,9 +49,9 @@ class PyTorchClassificationLaplaceTrainer(
 
     def eval_mode(self) -> None:
         if isinstance(self.model, ParametricLaplace):
-            self.model.model.eval()
+            self.model.model = self.model.model.eval()
         else:
-            self.model.eval()
+            self.model = self.model.eval()
 
     def sample_model_parameters(self, n_model_samples: int, sample_on_cpu: bool = False) -> Tensor:
         """
@@ -197,7 +198,7 @@ class PyTorchClassificationLaplaceTrainer(
                 subnet_mask = self.subnet_mask(self.model, param_names)
 
             else:
-                raise ValueError
+                raise ValueError(f"Unsupported subnet mask function: {self.subnet_mask.func}")
 
             laplace_approx_kwargs = dict(subnetwork_indices=subnet_mask.select())
 
@@ -234,7 +235,7 @@ class PyTorchClassificationLaplaceTrainer(
         return nll_loss(logprobs, pseudolabels, reduction="none")  # [N,]
 
     def compute_badge_pseudoloss_v2(
-        self, _input: Tensor, grad_params: dict, no_grad_params: dict
+        self, _input: Tensor, grad_params: ParamDict, no_grad_params: ParamDict
     ) -> Tensor:
         """
         Arguments:

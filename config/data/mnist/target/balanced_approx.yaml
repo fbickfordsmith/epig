@@ -1,11 +1,12 @@
 # @package _global_
 
 # labels_count_main.target is a placeholder: it isn't used when
-# acquisition.epig_classification.target_class_dist is defined.
+# acquisition.epig.classification.target_class_dist is defined.
 
 acquisition:
-  epig_classification:
-    target_class_dist: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+  epig:
+    classification:
+      target_class_dist: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
 data:
   label_counts_main:

@@ -1,4 +1,4 @@
-from typing import Callable, Sequence, Union
+from typing import Callable, Sequence
 
 import numpy as np
 from numpy.random import Generator
@@ -17,9 +17,9 @@ class ActiveLearningData:
         rng: Generator,
         batch_sizes: ConfigDict,
         label_counts_main: ConfigDict,
-        label_counts_test: Union[ConfigDict, ConfigList, int],
-        class_map: Union[ConfigDict, ConfigList] = None,
-        loader_kwargs: ConfigDict = None,
+        label_counts_test: ConfigDict | ConfigList | int,
+        class_map: ConfigDict | ConfigList | None = None,
+        loader_kwargs: ConfigDict | None = None,
     ) -> None:
         self.main_dataset = dataset(train=True)
         self.test_dataset = dataset(train=False)
@@ -61,7 +61,7 @@ class ActiveLearningData:
         self.main_dataset = self.main_dataset.torch()
         self.test_dataset = self.test_dataset.torch()
 
-    def get_loader(self, subset: str, shuffle: bool = None) -> DataLoader:
+    def get_loader(self, subset: str, shuffle: bool | None = None) -> DataLoader:
         if subset == "test":
             inputs = self.test_dataset.data[self.test_inds]
             labels = self.test_dataset.targets[self.test_inds]
@@ -81,6 +81,8 @@ class ActiveLearningData:
         if shuffle is None:
             shuffle = subset in {"train", "target"}
 
+        # Use drop_last=True during training to avoid small batches that produce higher gradient
+        # variance. Elsewhere use drop_last=False to ensure all the examples are used.
         loader = DataLoader(
             dataset=TensorDataset(inputs, labels),
             batch_size=batch_size,
@@ -91,7 +93,7 @@ class ActiveLearningData:
 
         return loader
 
-    def move_from_pool_to_train(self, pool_inds_to_move: Union[int, Sequence[int]]) -> None:
+    def move_from_pool_to_train(self, pool_inds_to_move: int | Sequence[int]) -> None:
         """
         Important:
         - pool_inds_to_move and pool_inds_to_keep index into self.main_inds["pool"]
@@ -110,7 +112,7 @@ class ActiveLearningData:
 
 
 def initialize_indices(
-    labels: np.ndarray, label_counts: Union[ConfigDict, ConfigList, int], rng: Generator
+    labels: np.ndarray, label_counts: ConfigDict | ConfigList | int, rng: Generator
 ) -> np.ndarray:
     if isinstance(label_counts, int):
         if label_counts == -1:
@@ -155,7 +157,7 @@ def preprocess_label_counts(label_counts: ConfigList, rng: Generator) -> dict:
     return processed_label_counts
 
 
-def map_classes(dataset: Dataset, class_map: Union[ConfigDict, ConfigList]) -> Dataset:
+def map_classes(dataset: Dataset, class_map: ConfigDict | ConfigList) -> Dataset:
     class_map = preprocess_class_map(class_map)
 
     dataset.original_targets = dataset.targets
@@ -164,7 +166,7 @@ def map_classes(dataset: Dataset, class_map: Union[ConfigDict, ConfigList]) -> D
     return dataset
 
 
-def preprocess_class_map(class_map: Union[ConfigDict, ConfigList]) -> Callable:
+def preprocess_class_map(class_map: ConfigDict | ConfigList) -> Callable:
     if isinstance(class_map, (list, ListConfig)):
         processed_class_map = {}
 

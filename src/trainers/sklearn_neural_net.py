@@ -18,6 +18,7 @@ from src.trainers.base_classif_probs import ProbsClassificationDeterministicTrai
 class SKLearnNeuralNetTrainer(Trainer):
     def __init__(self, model: BaseEstimator) -> None:
         self.model = model
+        self.use_val_data = False
 
     @staticmethod
     def transform(x: Tensor) -> Tensor:
@@ -44,7 +45,7 @@ class SKLearnNeuralNetTrainer(Trainer):
 
         return torch.tensor(preds, device=inputs.device)
 
-    def train(self, train_loader: DataLoader, val_loader: DataLoader) -> Tuple[None, None]:
+    def train(self, train_loader: DataLoader) -> Tuple[None, None]:
         inputs, labels = next(iter(train_loader))  # [N, *F], [N,]
 
         assert len(inputs) == len(train_loader.dataset)

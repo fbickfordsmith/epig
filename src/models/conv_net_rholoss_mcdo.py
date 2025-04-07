@@ -54,7 +54,7 @@ class MCDropoutRHOLossConvNet(BayesianModule):
         x = self.block3(x)
 
         x = x.flatten(start_dim=1)
-        
+
         x = self.block4(x)
         x = self.block5(x)
         x = self.fc(x)

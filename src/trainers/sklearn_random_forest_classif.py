@@ -9,6 +9,7 @@ from typing import Tuple
 
 import numpy as np
 import torch
+from omegaconf import DictConfig
 from sklearn.cross_decomposition import PLSCanonical
 from sklearn.ensemble import RandomForestClassifier
 from torch import Tensor
@@ -19,12 +20,16 @@ from src.trainers.base_classif_probs import ProbsClassificationStochasticTrainer
 
 class SKLearnRandomForestClassificationTrainer(ProbsClassificationStochasticTrainer):
     def __init__(
-        self, model: RandomForestClassifier, n_classes_pls: int = None, epig_cfg: dict = None
+        self,
+        model: RandomForestClassifier,
+        n_classes_pls: int | None = None,
+        epig_cfg: DictConfig | None = None,
     ) -> None:
         self.model = model
         self.n_classes_pls = n_classes_pls
         self.n_samples_test = model.n_estimators  # Placeholder: this isn't used
         self.epig_cfg = epig_cfg
+        self.use_val_data = False
 
     def eval_mode(self) -> None:
         pass
@@ -69,7 +74,7 @@ class SKLearnRandomForestClassificationTrainer(ProbsClassificationStochasticTrai
 
         return probs  # [N, Cl]
 
-    def train(self, train_loader: DataLoader, val_loader: DataLoader) -> Tuple[None, None]:
+    def train(self, train_loader: DataLoader) -> Tuple[None, None]:
         inputs, labels = next(iter(train_loader))  # [N, *F], [N,]
 
         assert len(inputs) == len(train_loader.dataset)

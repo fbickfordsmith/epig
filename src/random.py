@@ -1,11 +1,10 @@
 import random
-from typing import Union
 
 import numpy as np
 import torch
 from numpy.random import Generator
 from torch import Generator, Tensor
-from torch.distributions import Categorical, Laplace, MultivariateNormal, Normal
+from torch.distributions import Categorical, Gumbel, Laplace, MultivariateNormal, Normal, Uniform
 from torch.distributions.multivariate_normal import _batch_mv
 from torch.nn.init import trunc_normal_
 
@@ -28,19 +27,19 @@ def get_rng(seed: int = -1) -> Generator:
 
 
 def sample_categorical(
-    distribution: Categorical = None,
-    logprobs: Tensor = None,
-    probs: Tensor = None,
+    distribution: Categorical | None = None,
+    logprobs: Tensor | None = None,
+    probs: Tensor | None = None,
     sample_shape: Shape = [],
-    torch_rng: Generator = None,
+    torch_rng: Generator | None = None,
 ) -> Tensor:
     """
     Sample from a categorical distribution with optional control over the random-number generator,
-    which is not possible using the sample() method of a torch.distributions.Categorical object.
+    which is not possible using torch.distributions.Categorical().sample().
 
     References:
-        https://github.com/pytorch/pytorch/blob/main/torch/distributions/categorical.py#L128
-        https://github.com/pytorch/pytorch/blob/main/torch/distributions/distribution.py#L12
+        https://github.com/pytorch/pytorch/blob/main/torch/distributions/categorical.py
+        https://github.com/pytorch/pytorch/blob/main/torch/distributions/distribution.py
     """
     # Ensure we have only one of {distribution, logprobs, probs} specified.
     assert np.sum([distribution is not None, logprobs is not None, probs is not None]) == 1
@@ -75,12 +74,66 @@ def sample_categorical(
     return sample.T.reshape(extended_sample_shape)
 
 
+def sample_gaussian(
+    distribution: MultivariateNormal | Normal,
+    sample_shape: Shape = [],
+    torch_rng: Generator | None = None,
+) -> Tensor:
+    """
+    Sample from a Gaussian distribution with optional control over the random-number generator,
+    which is not possible using torch.distributions.MultivariateNormal().sample() or
+    torch.distributions.Normal().sample().
+
+    If we wanted to take mean and std as arguments, we would use the following code:
+    >>> sample_shape = torch.Size(sample_shape) + mean.shape
+    >>> mean = mean.expand(sample_shape)
+    >>> std = std.expand(sample_shape)
+
+    References:
+        https://github.com/cornellius-gp/gpytorch/blob/main/gpytorch/distributions/multivariate_normal.py
+        https://github.com/pytorch/pytorch/blob/main/torch/distributions/multivariate_normal.py
+        https://github.com/pytorch/pytorch/blob/main/torch/distributions/normal.py
+    """
+    sample_shape = distribution._extended_shape(sample_shape)
+    mean = distribution.mean.expand(sample_shape)
+    sample = torch.normal(torch.zeros_like(mean), torch.ones_like(mean), generator=torch_rng)
+
+    if isinstance(distribution, MultivariateNormal):
+        # Calling distribution._unbroadcasted_scale_tril can cause an error if distribution is a
+        # lazily instantiated instance of gpytorch.distributions.MultivariateNormal.
+        return distribution.mean + _batch_mv(distribution._unbroadcasted_scale_tril, sample)
+    else:
+        return distribution.mean + distribution.stddev * sample
+
+
+def sample_gumbel(
+    distribution: Gumbel, sample_shape: Shape = [], torch_rng: Generator | None = None
+) -> Tensor:
+    """
+    Sample from a Gumbel distribution with optional control over the random-number generator, which
+    is not possible using torch.distributions.Gumbel().sample().
+
+    References:
+        https://github.com/pytorch/pytorch/blob/main/torch/distributions/gumbel.py
+        https://github.com/pytorch/pytorch/blob/main/torch/distributions/transformed_distribution.py
+    """
+    sample = sample_uniform(distribution.base_dist, sample_shape, torch_rng)
+
+    for transform in distribution.transforms:
+        sample = transform(sample)
+
+    return sample
+
+
 def sample_laplace(
-    distribution: Laplace, sample_shape: Shape = [], torch_rng: Generator = None
+    distribution: Laplace, sample_shape: Shape = [], torch_rng: Generator | None = None
 ) -> Tensor:
     """
     Sample from a Laplace distribution with optional control over the random-number generator, which
-    is not possible using torch.distributions.Laplace().rsample().
+    is not possible using torch.distributions.Laplace().sample().
+
+    References:
+        https://github.com/pytorch/pytorch/blob/main/torch/distributions/laplace.py
     """
     sample_shape = distribution._extended_shape(sample_shape)
     finfo = torch.finfo(distribution.loc.dtype)
@@ -103,40 +156,36 @@ def sample_laplace(
     return distribution.loc - distribution.scale * unif.sign() * log_1_minus_abs_unif
 
 
-def sample_gaussian(
-    distribution: Union[MultivariateNormal, Normal],
-    sample_shape: Shape = [],
-    torch_rng: Generator = None,
+def sample_uniform(
+    distribution: Uniform, sample_shape: Shape = [], torch_rng: Generator | None = None
 ) -> Tensor:
     """
-    Sample from a Gaussian distribution with optional control over the random-number generator,
-    which is not possible using the rsample() methods of MultivariateNormal or Normal.
+    Sample from a uniform distribution with optional control over the random-number generator, which
+    is not possible using torch.distributions.Uniform().sample().
 
-    If we wanted to take mean and std as arguments, we would use the following code:
-    >>> sample_shape = torch.Size(sample_shape) + mean.shape
-    >>> mean = mean.expand(sample_shape)
-    >>> std = std.expand(sample_shape)
+    References:
+        https://github.com/pytorch/pytorch/blob/main/torch/distributions/uniform.py
     """
     sample_shape = distribution._extended_shape(sample_shape)
 
-    mean = distribution.mean.expand(sample_shape)
-    std = distribution.stddev.expand(sample_shape)
+    sample = torch.rand(
+        sample_shape,
+        generator=torch_rng,
+        dtype=distribution.low.dtype,
+        device=distribution.low.device,
+    )
 
-    sample = torch.normal(torch.zeros_like(mean), torch.ones_like(std), generator=torch_rng)
-
-    if isinstance(distribution, MultivariateNormal):
-        return distribution.mean + _batch_mv(distribution._unbroadcasted_scale_tril, sample)
-    else:
-        return mean + std * sample
+    return distribution.low + sample * (distribution.high - distribution.low)
 
 
-def sample_truncated_gaussian(
-    tensor: Tensor, limit: float, torch_rng: Generator, mean: float = 0.0, std: float = 1.0
+def sample_truncated_gaussian_like(
+    x: Tensor, limit: float, mean: float = 0.0, std: float = 1.0, torch_rng: Generator | None = None
 ) -> Tensor:
     """
-    Sample from a truncated Gaussian distribution, matching the shape and dtype of an input tensor.
+    Sample from a truncated Gaussian distribution, matching the shape, dtype, layout and device of
+    the input tensor.
     """
-    sample = torch.empty_like(tensor)
+    sample = torch.empty_like(x)
 
     trunc_normal_(sample, mean, std, -limit, limit, torch_rng)
 

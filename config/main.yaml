@@ -22,7 +22,7 @@ acquisition:
   method: random
   probcover:
     graph_constructor:
-      _target_: src.coresets.probcover.construct_graph
+      _target_: src.coverage.probcover.construct_graph
       ball_radius: ${acquisition.probcover.tuned_ball_radius[${data.dataset._target_}][${data.dataset.embedding_type}]}
       batch_size: ${data.batch_sizes.pool}
     tuned_ball_radius:
@@ -34,6 +34,7 @@ acquisition:
         vitb4_300ep: 0.22
       src.data.datasets.EmbeddingMNIST:
         simclr: 0.26
+  stochasticity: null  # Use stochastic acquisition (https://arxiv.org/abs/2106.12059)
 
 adjust_test_predictions: False
 
@@ -45,10 +46,10 @@ data:
   batch_sizes:
     pool: ${data.batch_sizes.test}
     target: ${acquisition.epig.n_target_samples}
-    test: -1
-    train: -1
+    test: -1  # Batch size equal to the dataset size
+    train: -1  # Batch size equal to the dataset size
     val: ${data.batch_sizes.test}
-  label_counts_test: -1
+  label_counts_test: -1  # Use the whole test set
 
 directories:
   base: .

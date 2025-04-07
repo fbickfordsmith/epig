@@ -3,18 +3,19 @@ import warnings
 from dataclasses import dataclass
 from operator import gt, lt
 from time import time
-from typing import Tuple
+from typing import Dict, Tuple
 
 import torch
 from gpytorch import settings
 from gpytorch.likelihoods import Likelihood
 from gpytorch.mlls import MarginalLogLikelihood, VariationalELBO
+from omegaconf import DictConfig
 from torch import Generator
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from src.data.utils import get_next
+from src.data.utils import get_next_batch
 from src.logging import Dictionary, prepend_to_keys
 from src.models import VariationalGaussianProcess
 
@@ -49,11 +50,11 @@ class GPyTorchTrainer:
     early_stopping_metric: str
     early_stopping_patience: int
     restore_best_model: bool
-    learning_rates: dict = None
-    init_mean: float = None
-    init_output_scale: float = None
-    init_length_scale: float = None
-    epig_cfg: dict = None
+    learning_rates: Dict[str, float] | None = None
+    init_mean: float | None = None
+    init_output_scale: float | None = None
+    init_length_scale: float | None = None
+    epig_cfg: DictConfig | None = None
 
     def __post_init__(self) -> None:
         warnings.simplefilter("ignore", UserWarning)
@@ -62,7 +63,7 @@ class GPyTorchTrainer:
         self.validation_gap = max(1, int(self.n_optim_steps_max / self.n_validations))
 
     def eval_mode(self) -> None:
-        self.model.eval()
+        self.model = self.model.eval()
 
     def set_rng_seed(self, seed: int) -> None:
         self.torch_rng.manual_seed(seed)
@@ -79,7 +80,7 @@ class GPyTorchTrainer:
         if init_length_scale is not None:
             self.model.covariance_fn.base_kernel.lengthscale = init_length_scale
 
-    def set_optimizer(self, optimizer: Optimizer, learning_rates: dict) -> None:
+    def set_optimizer(self, optimizer: Optimizer, learning_rates: Dict[str, float] | None) -> None:
         if learning_rates is None:
             self.optimizer = optimizer(params=self.model.parameters())
 
@@ -100,6 +101,9 @@ class GPyTorchTrainer:
         mll_fn = VariationalELBO(
             likelihood=self.likelihood_fn, model=self.model, num_data=len(train_loader.dataset)
         )
+
+        device = next(self.model.parameters()).device
+        mll_fn = mll_fn.to(device)
 
         log = Dictionary()
         start_time = time()
@@ -164,7 +168,7 @@ class GPyTorchTrainer:
         return step, log
 
     def train_step(self, loader: DataLoader, mll_fn: MarginalLogLikelihood) -> float:
-        inputs, labels = get_next(loader)  # [N, ...], [N,]
+        inputs, labels = get_next_batch(loader)  # [N, ...], [N,]
 
         self.model.train()
 

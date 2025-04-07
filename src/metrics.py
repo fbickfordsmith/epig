@@ -4,11 +4,8 @@ K = number of model samples
 N = number of examples
 """
 
-from typing import Any
-
 import torch
 from torch import Tensor
-from torch.nn.functional import nll_loss
 
 
 def accuracy_from_conditionals(predictions: Tensor, labels: Tensor) -> Tensor:
@@ -61,7 +58,7 @@ def count_correct_from_marginals(predictions: Tensor, labels: Tensor) -> Tensor:
     return torch.sum(is_correct)  #  [1,]
 
 
-def nll_loss_from_probs(probs: Tensor, labels: Tensor, **kwargs: Any) -> Tensor:
+def nll_loss_from_probs(probs: Tensor, labels: Tensor, reduction: str = "mean") -> Tensor:
     """
     Arguments:
         probs: Tensor[float], [N, Cl]
@@ -70,5 +67,11 @@ def nll_loss_from_probs(probs: Tensor, labels: Tensor, **kwargs: Any) -> Tensor:
     Returns:
         Tensor[float]
     """
-    probs = torch.clamp(probs, min=torch.finfo(probs.dtype).eps)  # [N, Cl]
-    return nll_loss(torch.log(probs), labels, **kwargs)
+    reduce_fns = {"none": lambda x: x, "mean": torch.mean, "sum": torch.sum}
+    reduce_fn = reduce_fns[reduction]
+
+    liks = torch.gather(probs, dim=-1, index=labels[:, None]).flatten()  # [N,]
+    liks = torch.clamp(liks, min=torch.finfo(liks.dtype).eps)  # [N,]
+    nlls = -torch.log(liks)  # [N,]
+
+    return reduce_fn(nlls)

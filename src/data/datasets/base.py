@@ -1,9 +1,3 @@
-"""
-F = number of features
-N = number of examples
-N_tr = number of training examples
-"""
-
 from pathlib import Path
 from typing import Tuple
 
@@ -12,7 +6,9 @@ import torch
 from torch import Tensor
 from torch.utils.data import Dataset
 
-from src.data.utils import preprocess_inputs_for_unit_norm, preprocess_inputs_for_unit_variance
+from src.data.input_preprocessing import preprocess_2d_inputs
+from src.data.label_preprocessing import preprocess_1d_labels
+from src.data.utils import is_float
 from src.typing import Array, Shape
 
 
@@ -39,12 +35,7 @@ class BaseDataset(Dataset):
 
     @property
     def task(self) -> str:
-        if isinstance(self.targets, np.ndarray):
-            labels_are_floats = self.targets.dtype.kind == "f"
-        else:
-            labels_are_floats = torch.is_floating_point(self.targets)
-
-        return "regression" if labels_are_floats else "classification"
+        return "regression" if is_float(self.targets) else "classification"
 
     @property
     def n_classes(self) -> int:
@@ -54,7 +45,7 @@ class BaseDataset(Dataset):
             else:
                 return len(torch.unique(self.targets))
         else:
-            raise Exception
+            raise Exception("n_classes is only defined for classification tasks")
 
     @property
     def n_regression_targets(self) -> int:
@@ -64,7 +55,7 @@ class BaseDataset(Dataset):
             else:
                 return self.targets.shape[-1]
         else:
-            raise Exception
+            raise Exception("n_regression_targets is only defined for regression tasks")
 
     def numpy(self) -> Dataset:
         if isinstance(self.data, Tensor):
@@ -100,21 +91,31 @@ class BaseEmbeddingDataset(BaseDataset):
         data_dir: Path,
         embedding_type: str,
         train: bool = True,
-        input_preprocessing: str = "unit_variance",
+        input_preprocessing: str | None = "zero_mean_and_unit_variance",
+        label_preprocessing: str | None = None,
     ) -> None:
-        subset = "train" if train else "test"
+        if "imagenet" in str(data_dir):
+            subset = "train" if train else "val"
+        else:
+            subset = "train" if train else "test"
 
-        self.data = np.load(data_dir / f"embeddings_{embedding_type}_{subset}.npy")  # [N, F]
-        self.targets = np.load(data_dir / f"labels_{subset}.npy")  # [N,]
+        self.data = np.load(data_dir / f"embeddings_{embedding_type}_{subset}.npy")
+        self.targets = np.load(data_dir / f"labels_{subset}.npy")
 
-        if input_preprocessing == "unit_norm":
-            self = preprocess_inputs_for_unit_norm(self)
-
-        elif input_preprocessing == "unit_variance":
+        if input_preprocessing is not None:
             if train:
-                train_inputs = self.data  # [N_tr, F]
+                train_inputs = self.data
             else:
-                embeddings_filename = f"embeddings_{embedding_type}_train.npy"
-                train_inputs = np.load(data_dir / embeddings_filename)  # [N_tr, F]
+                embeddings_filepath = data_dir / f"embeddings_{embedding_type}_train.npy"
+                train_inputs = np.load(embeddings_filepath)
 
-            self = preprocess_inputs_for_unit_variance(self, train_inputs)
+            self = preprocess_2d_inputs(self, train_inputs, input_preprocessing)
+
+        if label_preprocessing is not None:
+            if train:
+                train_labels = self.targets
+            else:
+                labels_filepath = data_dir / "labels_train.npy"
+                train_labels = np.load(labels_filepath)
+
+            self = preprocess_1d_labels(self, train_labels, label_preprocessing)

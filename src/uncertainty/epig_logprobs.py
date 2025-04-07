@@ -11,6 +11,7 @@ import torch
 from torch import Tensor
 
 from src.math import logmeanexp
+from src.uncertainty.epig_probs import epig_from_probs_using_matmul
 from src.uncertainty.utils import check
 
 

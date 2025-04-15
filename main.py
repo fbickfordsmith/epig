@@ -312,7 +312,7 @@ def acquire_using_uncertainty(
     with torch.inference_mode(), gpytorch.settings.cholesky_max_tries(5):
         scores = trainer.estimate_uncertainty(**acq_kwargs)
 
-        scores = torch.nan_to_num(scores, nan=torch.min(scores))
+        scores = torch.nan_to_num(scores, nan=torch.finfo(scores.dtype).min)
 
         if cfg.acquisition.stochasticity is not None:
             # Use stochastic acquisition (https://arxiv.org/abs/2106.12059).

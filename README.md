@@ -34,7 +34,7 @@ Clone the repo and move into it:
 git clone https://github.com/fbickfordsmith/epig.git && cd epig
 ```
 
-If you're not using a CUDA device, remove the `cudatoolkit` and `pytorch-cuda` dependencies in `environment.yaml`.
+If you're not using a CUDA device, remove the `cudatoolkit` and `pytorch-cuda` dependencies in [`environment.yaml`](/environment.yaml).
 
 Create an environment using [Mamba](https://mamba.readthedocs.io) (or [Conda](https://conda.io), replacing `mamba` with `conda` below) and activate it:
 
